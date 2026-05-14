@@ -11,7 +11,6 @@ import { useAuth } from '@/lib/auth-context'
 import { Lock } from 'lucide-react'
 import { useCart } from '@/lib/cart-context'
 import { useFavorites } from '@/lib/favorites-context'
-import { useAuth } from '@/lib/auth-context'
 
 interface ProductCardProps {
   product: Product
