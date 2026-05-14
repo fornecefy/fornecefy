@@ -12,7 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth, UserType } from '@/lib/auth-context'
 import { states } from '@/lib/data'
 
-export default function CadastroPage() {
+import { Suspense } from 'react'
+
+function CadastroContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tipoParam = searchParams.get('tipo') as UserType | null
@@ -370,5 +372,17 @@ export default function CadastroPage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function CadastroPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    }>
+      <CadastroContent />
+    </Suspense>
   )
 }

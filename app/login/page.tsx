@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/lib/auth-context'
 
-export default function LoginPage() {
+import { Suspense } from 'react'
+
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/'
@@ -154,5 +156,17 @@ export default function LoginPage() {
         </Card>
       </main>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
