@@ -68,23 +68,30 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
                     <User className="h-4 w-4" />
-                    {user.name.split(' ')[0]}
+                    {user.email === 'fornecefy@gmail.com' ? 'Admin' : user.name.split(' ')[0]}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-sm font-medium">{user.email === 'fornecefy@gmail.com' ? 'Master Admin' : user.name}</p>
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  {user.type === 'fornecedor' && (
+                  {user.email === 'fornecefy@gmail.com' ? (
+                    <DropdownMenuItem asChild>
+                      <Link href="/master-admin" className="cursor-pointer font-medium text-primary">
+                        <User className="mr-2 h-4 w-4" />
+                        Painel Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : user.type === 'fornecedor' ? (
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard" className="cursor-pointer">
                         <Building2 className="mr-2 h-4 w-4" />
                         Painel do Fornecedor
                       </Link>
                     </DropdownMenuItem>
-                  )}
+                  ) : null}
                   <DropdownMenuItem asChild>
                     <Link href="/favoritos" className="cursor-pointer">
                       <Heart className="mr-2 h-4 w-4" />
