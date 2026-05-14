@@ -59,7 +59,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
               <Store className="w-3 h-3" />
-              <span>{supplier.products.length} produtos</span>
+              <span>{supplier.products?.length || 0} produtos</span>
             </div>
           </div>
         </CardContent>

@@ -27,5 +27,6 @@ export async function getSuppliers(): Promise<Supplier[]> {
     plan: item.plan || 'Básico',
     verified: item.verified_badge || false,
     rating: item.average_rating || 0,
+    products: [], // Inicialmente vazio, produtos serão carregados separadamente se necessário
   }))
 }
