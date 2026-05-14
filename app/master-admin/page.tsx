@@ -19,7 +19,10 @@ import {
   XCircle,
   Zap,
   CreditCard,
-  Target
+  Target,
+  Trash2,
+  Pencil,
+  Package
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,10 +49,12 @@ import { Loader2 } from 'lucide-react'
 
 export default function MasterAdminPage() {
   const [searchTerm, setSearchTerm] = useReactState('')
+  const [productSearchTerm, setProductSearchTerm] = useReactState('')
   const { user, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const [isAuthorized, setIsAuthorized] = useReactState(false)
   const [suppliers, setSuppliers] = useReactState<any[]>([])
+  const [products, setProducts] = useReactState<any[]>([])
   const [isLoadingData, setIsLoadingData] = useReactState(true)
 
   const MASTER_EMAIL = 'fornecefy@gmail.com'
@@ -57,34 +62,43 @@ export default function MasterAdminPage() {
   useEffect(() => {
     if (!isAuthLoading) {
       if (!user) {
-        // Se não estiver logado, manda para o login com intenção de voltar
         router.push('/login?redirect=/master-admin')
       } else if (user.email !== MASTER_EMAIL) {
-        // Se estiver logado mas não for o master, expulsa para a home
         router.push('/')
       } else {
-        // Se for o master, autoriza e busca os dados
         setIsAuthorized(true)
-        fetchSuppliers()
+        fetchAdminData()
       }
     }
   }, [user, isAuthLoading, router])
 
   const [admins, setAdmins] = useReactState<any[]>([])
 
-  const fetchSuppliers = async () => {
+  const fetchAdminData = async () => {
+    setIsLoadingData(true)
     try {
-      // Busca todos os perfis do tipo fornecedor e admin
-      const { data, error } = await supabase
+      // Busca Perfis (Fornecedores e Admins)
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .in('type', ['fornecedor', 'admin'])
       
-      if (error) throw error
+      if (profileError) throw profileError
 
-      if (data) {
-        setSuppliers(data.filter(p => p.type === 'fornecedor'))
-        setAdmins(data.filter(p => p.type === 'admin'))
+      // Busca Todos os Produtos
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (productError) throw productError
+
+      if (profileData) {
+        setSuppliers(profileData.filter(p => p.type === 'fornecedor'))
+        setAdmins(profileData.filter(p => p.type === 'admin'))
+      }
+      if (productData) {
+        setProducts(productData)
       }
     } catch (err) {
       console.error('Erro ao buscar dados do painel:', err)
@@ -94,17 +108,39 @@ export default function MasterAdminPage() {
   }
 
   const handleToggleVerified = async (id: string, currentStatus: boolean) => {
-    // Atualiza localmente para resposta rápida
     setSuppliers(prev => prev.map(s => s.id === id ? { ...s, verified: !currentStatus } : s))
-    
-    // Atualiza no banco
     try {
       const { error } = await supabase.from('profiles').update({ verified: !currentStatus }).eq('id', id)
       if (error) throw error
     } catch (err) {
       console.error('Erro ao atualizar fornecedor:', err)
-      // Reverte se der erro
       setSuppliers(prev => prev.map(s => s.id === id ? { ...s, verified: currentStatus } : s))
+    }
+  }
+
+  const handleDeleteSupplier = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este fornecedor? Todos os dados vinculados podem ser perdidos.')) return
+    
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', id)
+      if (error) throw error
+      setSuppliers(prev => prev.filter(s => s.id !== id))
+    } catch (err) {
+      console.error('Erro ao deletar fornecedor:', err)
+      alert('Erro ao excluir fornecedor.')
+    }
+  }
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este produto?')) return
+    
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', id)
+      if (error) throw error
+      setProducts(prev => prev.filter(p => p.id !== id))
+    } catch (err) {
+      console.error('Erro ao deletar produto:', err)
+      alert('Erro ao excluir produto.')
     }
   }
 
@@ -127,13 +163,13 @@ export default function MasterAdminPage() {
             <p className="text-muted-foreground">Gestão global do ecossistema Fornecefy</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={fetchAdminData}>
               <BarChart3 className="w-4 h-4" />
-              Relatórios
+              Sincronizar
             </Button>
             <Button className="gap-2">
               <Plus className="w-4 h-4" />
-              Novo Usuário
+              Novo Cadastro
             </Button>
           </div>
         </div>
@@ -143,6 +179,10 @@ export default function MasterAdminPage() {
             <TabsTrigger value="suppliers" className="gap-2">
               <Building2 className="w-4 h-4" />
               Fornecedores
+            </TabsTrigger>
+            <TabsTrigger value="products" className="gap-2">
+              <Package className="w-4 h-4" />
+              Produtos
             </TabsTrigger>
             <TabsTrigger value="team" className="gap-2">
               <Users className="w-4 h-4" />
@@ -169,9 +209,6 @@ export default function MasterAdminPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
-                    <Button variant="outline" size="icon">
-                      <Filter className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -182,7 +219,6 @@ export default function MasterAdminPage() {
                       <TableHead>Fornecedor</TableHead>
                       <TableHead>Plano</TableHead>
                       <TableHead>Selo</TableHead>
-                      <TableHead>Modalidades</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -190,14 +226,8 @@ export default function MasterAdminPage() {
                   <TableBody>
                     {isLoadingData ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
+                        <TableCell colSpan={5} className="text-center py-8">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-                        </TableCell>
-                      </TableRow>
-                    ) : suppliers.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          Nenhum fornecedor encontrado.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -207,16 +237,16 @@ export default function MasterAdminPage() {
                         <TableRow key={s.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded bg-muted overflow-hidden flex items-center justify-center font-bold text-xs">
+                              <div className="w-8 h-8 rounded bg-muted overflow-hidden flex items-center justify-center font-bold text-xs shrink-0">
                                 {s.logo_url ? (
                                   <img src={s.logo_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                   (s.name || s.email || 'F')[0].toUpperCase()
                                 )}
                               </div>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{s.name || s.company_name || 'Sem Nome'}</span>
-                                <span className="text-xs text-muted-foreground">{s.email}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-medium truncate">{s.name || s.company_name || 'Sem Nome'}</span>
+                                <span className="text-xs text-muted-foreground truncate">{s.email}</span>
                               </div>
                             </div>
                           </TableCell>
@@ -235,19 +265,115 @@ export default function MasterAdminPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <span className="text-xs text-muted-foreground">
-                              {(s.modalities || []).length} ativas
-                            </span>
-                          </TableCell>
-                          <TableCell>
                             <Badge variant="outline" className={s.status === 'blocked' ? "text-destructive border-destructive" : "text-emerald-600 bg-emerald-50 border-emerald-200"}>
                               {s.status === 'blocked' ? 'Bloqueado' : 'Ativo'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteSupplier(s.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="products" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Gestão Global de Produtos</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar produto ou SKU..."
+                        className="pl-8 w-[250px]"
+                        value={productSearchTerm}
+                        onChange={(e) => setProductSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Produto</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Preço (Varejo)</TableHead>
+                      <TableHead>Preço (Atacado)</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingData ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
+                        </TableCell>
+                      </TableRow>
+                    ) : products.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          Nenhum produto cadastrado no sistema.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      products
+                        .filter(p => 
+                          (p.name || '').toLowerCase().includes(productSearchTerm.toLowerCase()) || 
+                          (p.sku || '').toLowerCase().includes(productSearchTerm.toLowerCase())
+                        )
+                        .map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded border bg-muted overflow-hidden flex items-center justify-center shrink-0">
+                                {p.image_url ? (
+                                  <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <Package className="w-5 h-5 text-muted-foreground" />
+                                )}
+                              </div>
+                              <span className="font-medium line-clamp-1">{p.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">
+                            {p.sku || 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            {p.price ? `R$ ${p.price.toFixed(2)}` : 'Sob consulta'}
+                          </TableCell>
+                          <TableCell>
+                            {p.wholesale_price ? `R$ ${p.wholesale_price.toFixed(2)}` : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={p.status === 'active' ? 'default' : 'secondary'} className={p.status === 'active' ? 'bg-emerald-500' : ''}>
+                              {p.status === 'active' ? 'Ativo' : 'Inativo'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProduct(p.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
