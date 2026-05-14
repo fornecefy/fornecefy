@@ -56,9 +56,14 @@ export default function MasterAdminPage() {
 
   useEffect(() => {
     if (!isAuthLoading) {
-      if (!user || user.email !== MASTER_EMAIL) {
+      if (!user) {
+        // Se não estiver logado, manda para o login com intenção de voltar
+        router.push('/login?redirect=/master-admin')
+      } else if (user.email !== MASTER_EMAIL) {
+        // Se estiver logado mas não for o master, expulsa para a home
         router.push('/')
       } else {
+        // Se for o master, autoriza e busca os dados
         setIsAuthorized(true)
         fetchSuppliers()
       }
