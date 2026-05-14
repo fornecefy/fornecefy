@@ -21,7 +21,8 @@ import {
   Instagram,
   Facebook,
   AlertTriangle,
-  Play
+  Play,
+  Lock
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,12 +34,14 @@ import { ProductCard } from '@/components/product-card'
 import { products, suppliers, formatCurrency, Modalidade } from '@/lib/data'
 import { useCart } from '@/lib/cart-context'
 import { useFavorites } from '@/lib/favorites-context'
+import { useAuth } from '@/lib/auth-context'
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const { addItem } = useCart()
   const { isFavoriteProduct, toggleFavoriteProduct } = useFavorites()
+  const { user } = useAuth()
   
   const product = products.find(p => p.id === id)
   const supplier = product ? suppliers.find(s => s.id === product.supplierId) : null
@@ -259,12 +262,31 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
               {/* Price */}
               <div className="space-y-1">
-                <p className="text-3xl md:text-4xl font-bold text-foreground">
-                  {formatCurrency(currentPrice)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Preço por unidade ({selectedModality.toLowerCase()})
-                </p>
+                {user ? (
+                  <>
+                    <p className="text-3xl md:text-4xl font-bold text-foreground">
+                      {formatCurrency(currentPrice)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Preço por unidade ({selectedModality.toLowerCase()})
+                    </p>
+                  </>
+                ) : (
+                  <div className="bg-muted/50 rounded-xl p-6 border border-border">
+                    <div className="flex items-center gap-3 mb-2 text-primary">
+                      <Lock className="w-5 h-5" />
+                      <span className="font-semibold">Preços restritos</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Apenas usuários cadastrados e logados podem visualizar os preços e realizar pedidos.
+                    </p>
+                    <Link href="/login">
+                      <Button className="w-full gap-2">
+                        Fazer Login para ver Preços
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
 
               <Separator />
@@ -306,61 +328,74 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 </div>
               </div>
 
-              <Separator />
+              {user ? (
+                <>
+                  <Separator />
+                  {/* Quantity Selector */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Quantidade</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center border border-border rounded-lg">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-r-none"
+                          onClick={() => setQuantity(Math.max(currentMinQuantity, quantity - 1))}
+                          disabled={quantity <= currentMinQuantity}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="w-16 text-center font-medium">{quantity}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-l-none"
+                          onClick={() => setQuantity(quantity + 1)}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Total: <span className="font-semibold text-foreground">{formatCurrency(totalPrice)}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Mínimo de {currentMinQuantity} unidades para {selectedModality}
+                    </p>
+                  </div>
 
-              {/* Quantity Selector */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Quantidade</Label>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center border border-border rounded-lg">
-                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 rounded-r-none"
-                      onClick={() => setQuantity(Math.max(currentMinQuantity, quantity - 1))}
-                      disabled={quantity <= currentMinQuantity}
+                  {/* Actions */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      size="lg" 
+                      className="flex-1 gap-2"
+                      onClick={handleAddToCart}
                     >
-                      <Minus className="w-4 h-4" />
+                      <ShoppingCart className="w-4 h-4" />
+                      {addedToCart ? 'Adicionado!' : 'Adicionar ao Orçamento'}
                     </Button>
-                    <span className="w-16 text-center font-medium">{quantity}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 rounded-l-none"
-                      onClick={() => setQuantity(quantity + 1)}
+                    <Button 
+                      size="lg" 
+                      variant="outline"
+                      className="flex-1 gap-2 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700"
+                      onClick={handleWhatsApp}
                     >
-                      <Plus className="w-4 h-4" />
+                      <MessageCircle className="w-4 h-4" />
+                      WhatsApp
                     </Button>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    Total: <span className="font-semibold text-foreground">{formatCurrency(totalPrice)}</span>
-                  </div>
+                </>
+              ) : (
+                <div className="pt-4">
+                  <Button
+                    size="lg"
+                    className="w-full h-12 text-base font-semibold"
+                    asChild
+                  >
+                    <Link href="/cadastro">Cadastre-se para comprar</Link>
+                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Mínimo de {currentMinQuantity} unidades para {selectedModality}
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  size="lg" 
-                  className="flex-1 gap-2"
-                  onClick={handleAddToCart}
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  {addedToCart ? 'Adicionado!' : 'Adicionar ao Orçamento'}
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  className="flex-1 gap-2 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700"
-                  onClick={handleWhatsApp}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  WhatsApp
-                </Button>
-              </div>
+              )}
 
               {/* Supplier Card */}
               <Card>

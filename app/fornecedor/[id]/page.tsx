@@ -185,13 +185,16 @@ function SupplierContent({ supplierId }: { supplierId: string }) {
                 {supplier.videoUrl && (
                   <section>
                     <h3 className="text-lg font-semibold mb-3">Vídeo Institucional</h3>
-                    <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-border">
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-                        <Youtube className="w-12 h-12 text-red-600" />
-                        <Button asChild variant="outline">
-                          <a href={supplier.videoUrl} target="_blank" rel="noopener noreferrer">Assistir no YouTube</a>
-                        </Button>
-                      </div>
+                    <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-border shadow-inner">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={`https://www.youtube.com/embed/${supplier.videoUrl.split('v=')[1] || supplier.videoUrl.split('/').pop()}`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
                     </div>
                   </section>
                 )}

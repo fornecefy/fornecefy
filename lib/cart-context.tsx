@@ -99,40 +99,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const generateWhatsAppMessage = (targetSupplierId?: string, shippingMethod = "A combinar", address = "") => {
     const groupedItems = getItemsBySupplier()
-    let message = "🛒 *Pedido via Fornecefy*\n\n"
+    let message = "🛒 *NOVO PEDIDO - FORNECEFY*\n"
+    message += "----------------------------------\n"
     
     if (targetSupplierId) {
       const supplierItems = groupedItems.get(targetSupplierId) || []
       const supplier = suppliers.find(s => s.id === targetSupplierId)
       if (supplier) {
-        message += `🏪 *Fornecedor:* ${supplier.name}\n`
-        message += `🚚 *Frete:* ${shippingMethod}\n`
-        if (address) message += `📍 *Endereço:* ${address}\n`
-        message += `\n📦 *Itens:*\n`
+        message += `🏪 *FORNECEDOR:* ${supplier.name.toUpperCase()}\n`
+        message += `🆔 *ID FORNECEDOR:* ${supplier.id}\n`
+        message += `🚚 *FRETE:* ${shippingMethod}\n`
+        if (address) message += `📍 *ENDEREÇO:* ${address}\n`
+        message += "----------------------------------\n\n"
+        message += `📦 *ITENS DO PEDIDO:*\n`
         
         supplierItems.forEach(item => {
           const price = item.product.prices?.[item.selectedModality]?.price || item.product.wholesalePrice
-          message += `• ${item.product.name}\n`
-          message += `  Qtd: ${item.quantity} | Mod: ${item.selectedModality}\n`
-          message += `  Subtotal: ${formatCurrency(price * item.quantity)}\n\n`
+          message += `🔹 ${item.product.name}\n`
+          message += `   • Qtd: ${item.quantity}\n`
+          message += `   • Modalidade: ${item.selectedModality}\n`
+          message += `   • Preço Un: ${formatCurrency(price)}\n`
+          message += `   • Subtotal: ${formatCurrency(price * item.quantity)}\n\n`
         })
         
-        message += `💰 *Total do Fornecedor: ${formatCurrency(getSupplierTotal(targetSupplierId))}*`
+        message += "----------------------------------\n"
+        message += `💰 *VALOR TOTAL: ${formatCurrency(getSupplierTotal(targetSupplierId))}*\n`
+        message += "----------------------------------\n"
+        message += "\n📌 _Pedido gerado automaticamente via Fornecefy_"
       }
-    } else {
-      // General message for all suppliers (rarely used now but kept for compatibility)
-      groupedItems.forEach((supplierItems, sId) => {
-        const s = suppliers.find(sup => sup.id === sId)
-        if (s) {
-          message += `📦 *${s.name}*\n`
-          supplierItems.forEach(item => {
-            const price = item.product.prices?.[item.selectedModality]?.price || item.product.wholesalePrice
-            message += `  • ${item.product.name} - ${item.quantity}un (${item.selectedModality})\n`
-          })
-          message += `  Subtotal: ${formatCurrency(getSupplierTotal(sId))}\n\n`
-        }
-      })
-      message += `💰 *Total Geral: ${formatCurrency(getTotalValue())}*`
     }
     
     return encodeURIComponent(message)
