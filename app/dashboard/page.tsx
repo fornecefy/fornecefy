@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { StorefrontEditor } from '@/components/storefront-editor'
+import { ProductForm } from '@/components/product-form'
 import { dashboardMetrics, leads, suppliers, products, formatCurrency } from '@/lib/data'
 
 const navItems = [
@@ -37,6 +38,7 @@ const navItems = [
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState('vitrine')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isAddingProduct, setIsAddingProduct] = useState(false)
 
   // Demo data - using the first supplier
   const [currentSupplier, setCurrentSupplier] = useState(suppliers[0])
@@ -260,7 +262,10 @@ export default function DashboardPage() {
                       Gerencie os produtos da sua vitrine
                     </CardDescription>
                   </div>
-                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                   <Button 
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    onClick={() => setIsAddingProduct(true)}
+                  >
                     Adicionar Produto
                   </Button>
                 </div>
@@ -507,6 +512,16 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+
+      {isAddingProduct && (
+        <ProductForm 
+          onClose={() => setIsAddingProduct(false)} 
+          onSuccess={() => {
+            // Recarregar dados ou mostrar toast
+            console.log('Produto cadastrado!')
+          }} 
+        />
+      )}
     </div>
   )
 }
