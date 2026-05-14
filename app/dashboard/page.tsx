@@ -18,6 +18,7 @@ import {
   X,
   Store,
   ExternalLink,
+  BadgeCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -268,6 +269,10 @@ export default function DashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                          Produto
+                        </th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
                           Preco
                         </th>
