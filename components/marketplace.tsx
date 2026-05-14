@@ -9,9 +9,12 @@ import { HeroSearch } from './hero-search'
 import { CategoryBar } from './category-bar'
 import { ProductCard } from './product-card'
 import { SupplierCard } from './supplier-card'
-import { products, suppliers } from '@/lib/data'
+import { products, suppliers as mockSuppliers } from '@/lib/data'
 import { Button } from '@/components/ui/button'
 import { Filters, FiltersSidebar } from './filters-sidebar'
+import { useEffect } from 'react'
+import { getSuppliers } from '@/lib/services/supplier-service'
+import { Supplier } from '@/lib/data'
 
 export function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -24,6 +27,22 @@ export function Marketplace() {
     minOrder: null,
     readyToShip: null,
   })
+
+  const [realSuppliers, setRealSuppliers] = useState<Supplier[]>([])
+
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      const data = await getSuppliers()
+      if (data.length > 0) {
+        setRealSuppliers(data)
+      } else {
+        setRealSuppliers(mockSuppliers) // Fallback para mock se o banco estiver vazio ou falhar
+      }
+    }
+    fetchSuppliers()
+  }, [])
+
+  const suppliers = realSuppliers.length > 0 ? realSuppliers : mockSuppliers
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
