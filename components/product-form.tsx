@@ -92,6 +92,23 @@ export function ProductForm({ onClose, onSuccess }: ProductFormProps) {
     }
   }
 
+  const handleDeleteImage = async (url: string, isGallery = false) => {
+    try {
+      await fetch(`/api/upload?url=${encodeURIComponent(url)}`, {
+        method: 'DELETE',
+      })
+      
+      if (isGallery) {
+        setFormData(prev => ({ ...prev, gallery: prev.gallery.filter(u => u !== url) }))
+      } else {
+        setFormData(prev => ({ ...prev, image: '' }))
+      }
+    } catch (err) {
+      console.error('Erro ao deletar imagem:', err)
+      setError('Erro ao remover a imagem do servidor.')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.image) {
@@ -167,7 +184,7 @@ export function ProductForm({ onClose, onSuccess }: ProductFormProps) {
                       variant="destructive" 
                       size="icon" 
                       className="absolute top-2 right-2 h-8 w-8"
-                      onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
+                      onClick={() => handleDeleteImage(formData.image)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -199,7 +216,7 @@ export function ProductForm({ onClose, onSuccess }: ProductFormProps) {
                         variant="destructive" 
                         size="icon" 
                         className="absolute top-1 right-1 h-5 w-5"
-                        onClick={() => setFormData(prev => ({ ...prev, gallery: prev.gallery.filter((_, i) => i !== idx) }))}
+                        onClick={() => handleDeleteImage(url, true)}
                       >
                         <X className="w-3 h-3" />
                       </Button>
