@@ -55,7 +55,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             cnpj: profile.cnpj,
             state: profile.state,
           })
+        } else {
+          // Fallback para caso o perfil não seja carregado
+          setUser({
+            id: session.user.id,
+            name: session.user.email!.split('@')[0],
+            email: session.user.email!,
+            type: 'comprador',
+            company: '',
+            phone: '',
+            cnpj: '',
+            state: '',
+          })
         }
+      } else {
+        setUser(null)
       }
       setIsLoading(false)
     }
@@ -81,6 +95,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone: profile.phone,
             cnpj: profile.cnpj,
             state: profile.state,
+          })
+        } else {
+          setUser({
+            id: session.user.id,
+            name: session.user.email!.split('@')[0],
+            email: session.user.email!,
+            type: 'comprador',
+            company: '',
+            phone: '',
+            cnpj: '',
+            state: '',
           })
         }
       } else if (event === 'SIGNED_OUT') {
