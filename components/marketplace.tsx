@@ -120,7 +120,8 @@ export function Marketplace() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <Header onSearch={setSearchQuery} searchQuery={searchQuery} />
+      <Header />
+      <HeroSearch onSearch={setSearchQuery} searchQuery={searchQuery} />
       <CategoryBar selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
 
       <div className="container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-8">

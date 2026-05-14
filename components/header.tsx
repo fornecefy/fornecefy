@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ShoppingCart, Menu, X, Package, User, LogIn, Search } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { ShoppingCart, Menu, X, Package, User, Heart, LogIn, LogOut, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -14,53 +13,50 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useCart } from '@/lib/cart-context'
+import { useFavorites } from '@/lib/favorites-context'
 import { useAuth } from '@/lib/auth-context'
 
-interface HeaderProps {
-  onSearch?: (query: string) => void
-  searchQuery?: string
-}
-
-export function Header({ onSearch, searchQuery = '' }: HeaderProps) {
+export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { getTotalItems } = useCart()
+  const { getFavoriteProductsCount } = useFavorites()
   const { user, logout } = useAuth()
   
   const totalItems = getTotalItems()
+  const favoritesCount = getFavoriteProductsCount()
 
   return (
     <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between h-14">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Package className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-foreground hidden sm:block">Fornecefy</span>
+            <span className="text-xl font-bold text-foreground">Fornecefy</span>
           </Link>
 
-          {/* Global Search */}
-          <div className="flex-1 max-w-2xl relative">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Buscar produtos ou fornecedores..."
-                className="w-full pl-10 pr-4 h-10 bg-muted/50 border-border focus:bg-background transition-colors"
-                value={searchQuery}
-                onChange={(e) => onSearch?.(e.target.value)}
-              />
-            </div>
-          </div>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1">
+            <Link href="/favoritos">
+              <Button variant="ghost" size="sm" className="relative gap-2">
+                <Heart className="h-4 w-4" />
+                Favoritos
+                {favoritesCount > 0 && (
+                  <Badge className="h-5 min-w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+                    {favoritesCount}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
             <Link href="/carrinho">
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingCart className="h-5 w-5" />
+              <Button variant="ghost" size="sm" className="relative gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                Orçamento
                 {totalItems > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 bg-primary text-primary-foreground text-[10px]">
+                  <Badge className="h-5 min-w-5 flex items-center justify-center p-0 bg-accent text-accent-foreground text-xs">
                     {totalItems}
                   </Badge>
                 )}
@@ -70,41 +66,78 @@ export function Header({ onSearch, searchQuery = '' }: HeaderProps) {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <User className="h-5 w-5" />
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    {user.name.split(' ')[0]}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 border-b mb-1">
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5">
                     <p className="text-sm font-medium">{user.name}</p>
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
+                  <DropdownMenuSeparator />
                   {user.type === 'fornecedor' && (
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard">Painel do Fornecedor</Link>
+                      <Link href="/dashboard" className="cursor-pointer">
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Painel do Fornecedor
+                      </Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem asChild>
-                    <Link href="/favoritos">Meus Favoritos</Link>
+                    <Link href="/favoritos" className="cursor-pointer">
+                      <Heart className="mr-2 h-4 w-4" />
+                      Meus Favoritos
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-destructive">
+                  <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
                     Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link href="/login">
-                <Button variant="ghost" size="icon">
-                  <LogIn className="h-5 w-5" />
-                </Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <LogIn className="h-4 w-4" />
+                    Entrar
+                  </Button>
+                </Link>
+                <Link href="/cadastro">
+                  <Button size="sm">Cadastrar</Button>
+                </Link>
+              </div>
             )}
-            
+          </nav>
+
+          {/* Mobile Menu Button */}
+          <div className="flex md:hidden items-center gap-2">
+            <Link href="/favoritos">
+              <Button variant="ghost" size="icon" className="relative">
+                <Heart className="h-5 w-5" />
+                {favoritesCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+                    {favoritesCount}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+            <Link href="/carrinho">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-accent text-accent-foreground text-xs">
+                    {totalItems}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
