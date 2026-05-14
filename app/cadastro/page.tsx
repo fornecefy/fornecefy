@@ -85,7 +85,7 @@ function CadastroContent() {
 
     setIsLoading(true)
 
-    const success = await register({
+    const { success, error } = await register({
       name: formData.name,
       email: formData.email,
       password: formData.password,
@@ -99,7 +99,7 @@ function CadastroContent() {
     if (success) {
       router.push(userType === 'fornecedor' ? '/dashboard' : '/')
     } else {
-      setError('Este e-mail já está cadastrado')
+      setError(error || 'Erro ao realizar cadastro')
     }
     
     setIsLoading(false)

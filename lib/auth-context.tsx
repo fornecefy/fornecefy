@@ -1,6 +1,8 @@
 "use client"
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import { supabase } from './supabase'
+import { useRouter } from 'next/navigation'
 
 export type UserType = 'fornecedor' | 'comprador'
 
@@ -18,95 +20,137 @@ export interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<boolean>
-  register: (userData: Omit<User, 'id'> & { password: string }) => Promise<boolean>
-  logout: () => void
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  register: (userData: Omit<User, 'id'> & { password: string }) => Promise<{ success: boolean; error?: string }>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Mock users for demonstration
-const mockUsers: (User & { password: string })[] = [
-  {
-    id: '1',
-    name: 'João Silva',
-    email: 'joao@fornecedor.com',
-    password: '123456',
-    type: 'fornecedor',
-    company: 'Fashion Brasil',
-    phone: '(11) 99999-9999',
-    cnpj: '12.345.678/0001-90',
-    state: 'São Paulo',
-  },
-  {
-    id: '2',
-    name: 'Maria Santos',
-    email: 'maria@comprador.com',
-    password: '123456',
-    type: 'comprador',
-    company: 'Loja da Maria',
-    phone: '(21) 98888-8888',
-    cnpj: '98.765.432/0001-10',
-    state: 'Rio de Janeiro',
-  },
-]
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
-    // Check for saved user in localStorage
-    const savedUser = localStorage.getItem('fornecefy_user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
+    // Check active session
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (profile) {
+          setUser({
+            id: session.user.id,
+            name: profile.name,
+            email: session.user.email!,
+            type: profile.type,
+            company: profile.company,
+            phone: profile.phone,
+            cnpj: profile.cnpj,
+            state: profile.state,
+          })
+        }
+      }
+      setIsLoading(false)
     }
-    setIsLoading(false)
+
+    checkUser()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (profile) {
+          setUser({
+            id: session.user.id,
+            name: profile.name,
+            email: session.user.email!,
+            type: profile.type,
+            company: profile.company,
+            phone: profile.phone,
+            cnpj: profile.cnpj,
+            state: profile.state,
+          })
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const foundUser = mockUsers.find(u => u.email === email && u.password === password)
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser
-      setUser(userWithoutPassword)
-      localStorage.setItem('fornecefy_user', JSON.stringify(userWithoutPassword))
-      return true
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      return { success: false, error: error.message }
     }
-    return false
+
+    return { success: true }
   }
 
-  const register = async (userData: Omit<User, 'id'> & { password: string }): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // Check if email already exists
-    if (mockUsers.some(u => u.email === userData.email)) {
-      return false
-    }
-    
-    const newUser: User = {
-      id: String(Date.now()),
-      name: userData.name,
+  const register = async (userData: Omit<User, 'id'> & { password: string }): Promise<{ success: boolean; error?: string }> => {
+    // 1. Sign up user in Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
-      type: userData.type,
-      company: userData.company,
-      phone: userData.phone,
-      cnpj: userData.cnpj,
-      state: userData.state,
+      password: userData.password,
+      options: {
+        data: {
+          full_name: userData.name,
+        }
+      }
+    })
+
+    if (authError) {
+      return { success: false, error: authError.message }
     }
-    
-    mockUsers.push({ ...newUser, password: userData.password })
-    setUser(newUser)
-    localStorage.setItem('fornecefy_user', JSON.stringify(newUser))
-    return true
+
+    if (authData.user) {
+      // 2. Create profile in public.profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: authData.user.id,
+            name: userData.name,
+            email: userData.email,
+            type: userData.type,
+            company: userData.company,
+            phone: userData.phone,
+            cnpj: userData.cnpj,
+            state: userData.state,
+          }
+        ])
+
+      if (profileError) {
+        // Fallback or cleanup if needed
+        console.error('Error creating profile:', profileError)
+        return { success: false, error: "Erro ao criar perfil. Por favor, contate o suporte." }
+      }
+    }
+
+    return { success: true }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut()
     setUser(null)
-    localStorage.removeItem('fornecefy_user')
+    router.push('/')
   }
 
   return (

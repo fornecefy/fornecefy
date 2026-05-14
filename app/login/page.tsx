@@ -29,12 +29,12 @@ function LoginContent() {
     setError('')
     setIsLoading(true)
 
-    const success = await login(email, password)
+    const { success, error } = await login(email, password)
     
     if (success) {
       router.push(redirect)
     } else {
-      setError('E-mail ou senha inválidos')
+      setError(error || 'E-mail ou senha inválidos')
     }
     
     setIsLoading(false)
@@ -128,14 +128,7 @@ function LoginContent() {
               </Button>
             </form>
 
-            {/* Demo credentials */}
-            <div className="mt-6 p-4 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground mb-2 font-medium">Credenciais de demonstração:</p>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p><strong>Fornecedor:</strong> joao@fornecedor.com / 123456</p>
-                <p><strong>Comprador:</strong> maria@comprador.com / 123456</p>
-              </div>
-            </div>
+
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <div className="relative w-full">
