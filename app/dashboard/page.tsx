@@ -102,11 +102,11 @@ export default function DashboardPage() {
         slug: formData.slug,
       }
 
-      // Campos extras que podem ou não existir
+      // Campos extras que mapeiam para o banco de dados
       const extraFields: any = {
-        bio: formData.bio,
-        logo_url: formData.logo,
-        cover_url: formData.coverImage,
+        description: formData.bio,
+        company_logo_url: formData.logo,
+        cover_image_url: formData.coverImage,
         min_order_value: formData.minOrderValue,
         category: formData.category,
         whatsapp: formData.whatsapp,
@@ -353,13 +353,13 @@ export default function DashboardPage() {
             <StorefrontEditor
               initialData={{
                 name: currentSupplier.name || '',
-                logo: currentSupplier.logo_url || '',
-                coverImage: currentSupplier.cover_url || '',
-                bio: currentSupplier.bio || '',
+                logo: currentSupplier.company_logo_url || '',
+                coverImage: currentSupplier.cover_image_url || '',
+                bio: currentSupplier.description || '',
                 minOrderValue: currentSupplier.min_order_value || 0,
                 state: currentSupplier.state || '',
                 category: currentSupplier.category || 'Geral',
-                whatsapp: currentSupplier.phone || currentSupplier.whatsapp || '',
+                whatsapp: currentSupplier.whatsapp || currentSupplier.phone || '',
                 slug: currentSupplier.slug || '',
               }}
               onSave={handleStorefrontSave}
@@ -514,14 +514,14 @@ export default function DashboardPage() {
                       Pedido Minimo
                     </label>
                     <p className="text-muted-foreground">
-                      {formatCurrency(currentSupplier.minOrderValue)}
+                      {formatCurrency(currentSupplier.min_order_value || 0)}
                     </p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Sobre Nos
                     </label>
-                    <p className="text-muted-foreground">{currentSupplier.bio}</p>
+                    <p className="text-muted-foreground">{currentSupplier.description}</p>
                   </div>
                 </div>
                 <Button 
