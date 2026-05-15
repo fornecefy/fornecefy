@@ -118,6 +118,28 @@ export default function MasterAdminPage() {
     }
   }
 
+  const handleUpdatePlan = async (id: string, newPlan: string) => {
+    setSuppliers(prev => prev.map(s => s.id === id ? { ...s, plan: newPlan } : s))
+    try {
+      const { error } = await supabase.from('profiles').update({ plan: newPlan }).eq('id', id)
+      if (error) throw error
+    } catch (err) {
+      console.error('Erro ao atualizar plano:', err)
+      alert('Erro ao atualizar plano.')
+    }
+  }
+
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    setSuppliers(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s))
+    try {
+      const { error } = await supabase.from('profiles').update({ status: newStatus }).eq('id', id)
+      if (error) throw error
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err)
+      alert('Erro ao atualizar status.')
+    }
+  }
+
   const handleDeleteSupplier = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este fornecedor? Todos os dados vinculados podem ser perdidos.')) return
     
@@ -128,6 +150,17 @@ export default function MasterAdminPage() {
     } catch (err) {
       console.error('Erro ao deletar fornecedor:', err)
       alert('Erro ao excluir fornecedor.')
+    }
+  }
+
+  const handleUpdateProductStatus = async (id: string, newStatus: string) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p))
+    try {
+      const { error } = await supabase.from('products').update({ status: newStatus }).eq('id', id)
+      if (error) throw error
+    } catch (err) {
+      console.error('Erro ao atualizar status do produto:', err)
+      alert('Erro ao atualizar status do produto.')
     }
   }
 
@@ -174,8 +207,12 @@ export default function MasterAdminPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="suppliers" className="space-y-6">
+        <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex bg-card border">
+            <TabsTrigger value="overview" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Visão Geral
+            </TabsTrigger>
             <TabsTrigger value="suppliers" className="gap-2">
               <Building2 className="w-4 h-4" />
               Fornecedores
@@ -193,6 +230,112 @@ export default function MasterAdminPage() {
               Configurações Técnicas
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total de Fornecedores</CardTitle>
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{suppliers.length}</div>
+                  <p className="text-xs text-muted-foreground">Fornecedores cadastrados no sistema</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total de Produtos</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{products.length}</div>
+                  <p className="text-xs text-muted-foreground">Produtos ativos no marketplace</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Equipe Interna</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{admins.length}</div>
+                  <p className="text-xs text-muted-foreground">Administradores e suporte</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Selo de Verificação</CardTitle>
+                  <BadgeCheck className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {suppliers.filter(s => s.verified).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Fornecedores verificados</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Atividade Recente</CardTitle>
+                  <CardDescription>Últimas ações realizadas no sistema</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {suppliers.slice(0, 3).map((s, i) => (
+                      <div key={i} className="flex items-center gap-4">
+                        <div className="w-2 h-2 rounded-full bg-primary" />
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium">Novo fornecedor cadastrado: {s.name}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {products.slice(0, 2).map((p, i) => (
+                      <div key={i} className="flex items-center gap-4">
+                        <div className="w-2 h-2 rounded-full bg-accent" />
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium">Novo produto adicionado: {p.name}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {suppliers.length === 0 && products.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">Nenhuma atividade recente registrada.</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ações Rápidas</CardTitle>
+                  <CardDescription>Atalhos para funções administrativas</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-4">
+                  <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => router.push('/dashboard')}>
+                    <Building2 className="w-5 h-5" />
+                    <span>Gerenciar Minha Loja</span>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={fetchAdminData}>
+                    <Zap className="w-5 h-5" />
+                    <span>Sincronizar Banco</span>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex flex-col gap-2">
+                    <ShieldCheck className="w-5 h-5" />
+                    <span>Logs de Segurança</span>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex flex-col gap-2">
+                    <Target className="w-5 h-5" />
+                    <span>Configurar Pixels</span>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="suppliers" className="space-y-4">
             <Card>
@@ -251,9 +394,15 @@ export default function MasterAdminPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={s.plan === 'Elite' ? 'default' : 'secondary'}>
-                              {s.plan || 'Básico'}
-                            </Badge>
+                            <select 
+                              className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer"
+                              value={s.plan || 'Básico'}
+                              onChange={(e) => handleUpdatePlan(s.id, e.target.value)}
+                            >
+                              <option value="Básico">Básico</option>
+                              <option value="Pro">Pro</option>
+                              <option value="Elite">Elite</option>
+                            </select>
                           </TableCell>
                           <TableCell>
                             {s.verified ? (
@@ -265,9 +414,14 @@ export default function MasterAdminPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={s.status === 'blocked' ? "text-destructive border-destructive" : "text-emerald-600 bg-emerald-50 border-emerald-200"}>
-                              {s.status === 'blocked' ? 'Bloqueado' : 'Ativo'}
-                            </Badge>
+                            <select 
+                              className={`bg-transparent text-xs font-bold focus:outline-none cursor-pointer ${s.status === 'blocked' ? 'text-destructive' : 'text-emerald-600'}`}
+                              value={s.status || 'active'}
+                              onChange={(e) => handleUpdateStatus(s.id, e.target.value)}
+                            >
+                              <option value="active">Ativo</option>
+                              <option value="blocked">Bloqueado</option>
+                            </select>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
@@ -361,9 +515,14 @@ export default function MasterAdminPage() {
                             {p.wholesale_price ? `R$ ${p.wholesale_price.toFixed(2)}` : '-'}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={p.status === 'active' ? 'default' : 'secondary'} className={p.status === 'active' ? 'bg-emerald-500' : ''}>
-                              {p.status === 'active' ? 'Ativo' : 'Inativo'}
-                            </Badge>
+                            <select 
+                              className={`bg-transparent text-xs font-bold focus:outline-none cursor-pointer ${p.status === 'active' ? 'text-emerald-600' : 'text-muted-foreground'}`}
+                              value={p.status || 'active'}
+                              onChange={(e) => handleUpdateProductStatus(p.id, e.target.value)}
+                            >
+                              <option value="active">Ativo</option>
+                              <option value="inactive">Inativo</option>
+                            </select>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
