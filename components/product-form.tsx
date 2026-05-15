@@ -100,9 +100,6 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
   }
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, isGallery = false) => {
-    // ... manter lógica de upload ...
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, isGallery = false) => {
     const file = e.target.files?.[0]
     if (!file) return
 
