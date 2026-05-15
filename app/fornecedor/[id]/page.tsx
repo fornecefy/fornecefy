@@ -37,14 +37,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     openGraph: {
       title: seoTitle,
       description: seoDescription,
-      images: [supplier.logo || '/placeholder-logo.png'],
+      images: [supplier.company_logo_url || '/placeholder-logo.png'],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
       title: seoTitle,
       description: seoDescription,
-      images: [supplier.logo || '/placeholder-logo.png'],
+      images: [supplier.company_logo_url || '/placeholder-logo.png'],
     }
   }
 }

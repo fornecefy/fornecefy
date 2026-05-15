@@ -50,8 +50,8 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
         if (profile) {
           const mappedProfile = {
             ...profile,
-            logo: profile.logo || '/placeholder-logo.png',
-            coverImage: profile.cover_image || '/placeholder.jpg',
+            logo: profile.company_logo_url || '/placeholder-logo.png',
+            coverImage: profile.cover_image_url || '/placeholder.jpg',
             minOrderValue: profile.min_order_value || 0,
             whatsapp: profile.whatsapp || '',
             bio: profile.description || '',
