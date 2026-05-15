@@ -168,13 +168,15 @@ export default function MasterAdminPage() {
       
       if (supplierError) throw supplierError
 
-      // Busca Perfis Administrativos
+      // Busca Perfis Administrativos (Tentativa segura sem a coluna 'role' que pode estar ausente)
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'admin')
+        .limit(10)
       
-      if (profileError) throw profileError
+      if (profileError && profileError.code !== '42703') {
+        console.warn('Erro ao buscar perfis:', profileError.message)
+      }
 
       // Busca Todos os Produtos
       const { data: productData, error: productError } = await supabase
@@ -196,8 +198,9 @@ export default function MasterAdminPage() {
       if (profileData) setAdmins(profileData)
       if (productData) setProducts(productData)
       if (blogData) setBlogPosts(blogData)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao buscar dados do painel:', err)
+      alert('Erro ao carregar dados do banco: ' + (err.message || 'Erro desconhecido'))
     } finally {
       setIsLoadingData(false)
     }

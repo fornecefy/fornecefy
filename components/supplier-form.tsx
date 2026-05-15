@@ -142,9 +142,25 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
         
         if (dbError) throw dbError
       } else {
-        setError('A criação de novos fornecedores deve ser feita via página de cadastro por segurança.')
-        setIsLoading(false)
-        return
+        // Criar novo fornecedor
+        const { error: dbError } = await supabase
+          .from('suppliers')
+          .insert([{
+            name: formData.name,
+            trade_name: formData.trade_name,
+            email: formData.email,
+            whatsapp: formData.whatsapp,
+            state: formData.state,
+            city: formData.city,
+            plan: formData.plan,
+            status: formData.status,
+            logo: formData.logo,
+            verified: formData.verified,
+            description: formData.description,
+            slug: formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u0300]/g, "").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-")
+          }])
+        
+        if (dbError) throw dbError
       }
 
       onSuccess()
