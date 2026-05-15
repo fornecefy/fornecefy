@@ -35,43 +35,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check active session
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
         
-        if (profile) {
-          setUser({
-            id: session.user.id,
-            name: profile.name,
-            email: session.user.email!,
-            type: profile.type,
-            company: profile.company,
-            phone: profile.phone,
-            cnpj: profile.cnpj,
-            state: profile.state,
-          })
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          
+          if (profile) {
+            setUser({
+              id: session.user.id,
+              name: profile.name,
+              email: session.user.email!,
+              type: profile.type,
+              company: profile.company,
+              phone: profile.phone,
+              cnpj: profile.cnpj,
+              state: profile.state,
+            })
+          } else {
+            // Fallback para caso o perfil não seja carregado
+            setUser({
+              id: session.user.id,
+              name: session.user.email!.split('@')[0],
+              email: session.user.email!,
+              type: 'comprador',
+              company: '',
+              phone: '',
+              cnpj: '',
+              state: '',
+            })
+          }
         } else {
-          // Fallback para caso o perfil não seja carregado
-          setUser({
-            id: session.user.id,
-            name: session.user.email!.split('@')[0],
-            email: session.user.email!,
-            type: 'comprador',
-            company: '',
-            phone: '',
-            cnpj: '',
-            state: '',
-          })
+          setUser(null)
         }
-      } else {
+      } catch (error) {
+        console.error('Auth error:', error)
         setUser(null)
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
 
     checkUser()
@@ -117,26 +123,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; userType?: UserType }> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      return { success: false, error: error.message }
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single()
+        
+        if (profile) {
+          const userData: User = {
+            id: data.user.id,
+            name: profile.name,
+            email: data.user.email!,
+            type: profile.type,
+            company: profile.company,
+            phone: profile.phone,
+            cnpj: profile.cnpj,
+            state: profile.state,
+          }
+          setUser(userData)
+          return { success: true, userType: profile.type }
+        }
+      }
+
+      return { success: true }
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Erro inesperado' }
     }
-
-    if (data.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('type')
-        .eq('id', data.user.id)
-        .single()
-      
-      return { success: true, userType: profile?.type }
-    }
-
-    return { success: true }
   }
 
   const register = async (userData: Omit<User, 'id'> & { password: string }): Promise<{ success: boolean; error?: string }> => {
