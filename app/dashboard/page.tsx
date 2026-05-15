@@ -112,11 +112,21 @@ export default function DashboardPage() {
         whatsapp: formData.whatsapp,
       }
 
-      // Tenta salvar todos os campos de uma vez
-      let { error } = await supabase
-        .from('suppliers')
-        .update({ ...baseUpdate, ...extraFields })
-        .eq('user_id', user?.id)
+      let error;
+      if (currentSupplier && currentSupplier.id) {
+        // Atualiza se já existe
+        const { error: updateErr } = await supabase
+          .from('suppliers')
+          .update({ ...baseUpdate, ...extraFields })
+          .eq('user_id', user?.id)
+        error = updateErr
+      } else {
+        // Insere se for fornecedor novo
+        const { error: insertErr } = await supabase
+          .from('suppliers')
+          .insert([{ user_id: user?.id, ...baseUpdate, ...extraFields }])
+        error = insertErr
+      }
 
       if (error) {
         console.error('Erro detalhado ao salvar vitrine:', error)
@@ -124,13 +134,19 @@ export default function DashboardPage() {
         // Se o erro for de coluna inexistente (PGRST204), tenta salvar apenas os campos base
         if (error.code === 'PGRST204' || error.message.includes('column') || error.message.includes('does not exist')) {
           console.warn('Colunas faltando no banco, tentando salvar apenas dados básicos...')
-          const { error: baseError } = await supabase
-            .from('suppliers')
-            .update(baseUpdate)
-            .eq('user_id', user?.id)
-
-          if (baseError) throw baseError
-          alert('Dados básicos salvos! As fotos e bio não foram salvas porque as colunas não existem no seu banco de dados Supabase. Execute o SQL de migração para corrigir.')
+          if (currentSupplier && currentSupplier.id) {
+            const { error: baseError } = await supabase
+              .from('suppliers')
+              .update(baseUpdate)
+              .eq('user_id', user?.id)
+            if (baseError) throw baseError
+          } else {
+            const { error: baseError } = await supabase
+              .from('suppliers')
+              .insert([{ user_id: user?.id, ...baseUpdate }])
+            if (baseError) throw baseError
+          }
+          alert('Dados básicos salvos! As fotos e bio não foram salvas porque as colunas não existem no seu banco de dados Supabase.')
         } else {
           // Outro tipo de erro (ex: RLS, conexão)
           throw error
