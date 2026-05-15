@@ -3,17 +3,20 @@ import { Supplier } from '../data'
 
 export async function getSuppliers(): Promise<Supplier[]> {
   try {
+    console.log('SupplierService: Buscando fornecedores...')
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('type', 'fornecedor')
     
     if (error) {
-      // Silencioso no marketplace para usar o fallback de mock se necessário
+      console.error('SupplierService: Erro ao buscar fornecedores:', error.message)
       return []
     }
 
     if (!data) return []
+
+    console.log(`SupplierService: ${data.length} fornecedores encontrados.`)
 
     // Map database fields to our Supplier interface
     return data.map((item: any) => ({
