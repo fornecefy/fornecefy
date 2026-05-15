@@ -437,7 +437,7 @@ export default function MasterAdminPage() {
                         <div key={s.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden border">
-                              {s.logo ? <img src={s.logo} className="w-full h-full object-cover" /> : <Building2 className="w-5 h-5 text-muted-foreground" />}
+                              {s.company_logo_url ? <img src={s.company_logo_url} className="w-full h-full object-cover" /> : <Building2 className="w-5 h-5 text-muted-foreground" />}
                             </div>
                             <div>
                               <p className="font-bold text-sm">{s.name}</p>
@@ -528,7 +528,7 @@ export default function MasterAdminPage() {
                               <TableCell>
                                 <div className="flex items-center gap-4">
                                   <div className="w-12 h-12 rounded-xl border bg-card flex items-center justify-center overflow-hidden shadow-sm">
-                                    {s.logo ? <img src={s.logo} className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-muted-foreground" />}
+                                    {s.company_logo_url ? <img src={s.company_logo_url} className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-muted-foreground" />}
                                   </div>
                                   <div className="flex flex-col">
                                     <div className="flex items-center gap-1.5">

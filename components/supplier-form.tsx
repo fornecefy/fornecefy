@@ -76,7 +76,7 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
           city: data.city || '',
           plan: data.plan || 'Básico',
           status: data.status || 'approved',
-          logo: data.logo || '',
+          logo: data.company_logo_url || '',
           verified: data.verified || false,
           description: data.description || ''
         })
@@ -134,7 +134,7 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
             city: formData.city,
             plan: formData.plan,
             status: formData.status,
-            logo: formData.logo,
+            company_logo_url: formData.logo,
             verified: formData.verified,
             description: formData.description
           })
@@ -154,7 +154,7 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
             city: formData.city,
             plan: formData.plan,
             status: formData.status,
-            logo: formData.logo,
+            company_logo_url: formData.logo,
             verified: formData.verified,
             description: formData.description,
             slug: formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u0300]/g, "").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-")

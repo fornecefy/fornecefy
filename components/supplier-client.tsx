@@ -3,20 +3,24 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, BadgeCheck, MapPin, MessageCircle, Share2, Heart, Youtube, Instagram, Facebook, Globe, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, BadgeCheck, MapPin, MessageCircle, Share2, UserPlus, Youtube, Instagram, Facebook, Globe, AlertTriangle, Search, Filter } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Header } from '@/components/header'
 import { ProductCard } from '@/components/product-card'
+import { Input } from '@/components/ui/input'
 import { formatCurrency } from '@/lib/data'
 import { supabase } from '@/lib/supabase'
 
 export default function SupplierClient({ supplierId }: { supplierId: string }) {
   const [supplier, setSupplier] = useState<any>(null)
   const [supplierProducts, setSupplierProducts] = useState<any[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [isFollowing, setIsFollowing] = useState(false)
 
   useEffect(() => {
     async function fetchSupplierData() {
@@ -55,6 +59,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
             minOrderValue: profile.min_order_value || 0,
             whatsapp: profile.whatsapp || '',
             bio: profile.description || '',
+            youtube_video_url: profile.youtube_video_url || '',
           }
           setSupplier(mappedProfile)
           
@@ -63,7 +68,10 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
             .select('*')
             .or(`supplier_id.eq.${profile.id},supplier_id.eq.${profile.user_id}`)
           
-          if (prods) setSupplierProducts(prods)
+          if (prods) {
+            setSupplierProducts(prods)
+            setFilteredProducts(prods)
+          }
         }
       } catch (err) {
         console.error('Erro ao carregar vitrine:', err)
@@ -73,6 +81,18 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
     }
     fetchSupplierData()
   }, [supplierId])
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredProducts(supplierProducts)
+    } else {
+      const query = searchTerm.toLowerCase()
+      setFilteredProducts(supplierProducts.filter(p => 
+        (p.name || '').toLowerCase().includes(query) || 
+        (p.description || '').toLowerCase().includes(query)
+      ))
+    }
+  }, [searchTerm, supplierProducts])
 
   if (isLoading) {
     return (
@@ -96,16 +116,41 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
     )
   }
 
-  const whatsappUrl = `https://wa.me/${supplier.whatsapp || ''}?text=${encodeURIComponent(
-    `Olá! Encontrei sua vitrine no Fornecefy e gostaria de saber mais sobre seus produtos.`
-  )}`
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: supplier.name,
+        text: `Confira a vitrine de ${supplier.name} no Fornecefy!`,
+        url: shareUrl,
+      })
+    } else {
+      navigator.clipboard.writeText(shareUrl)
+      alert('Link copiado para a área de transferência!')
+    }
+  }
+
+  const handleFollow = () => {
+    setIsFollowing(!isFollowing)
+    // Aqui viria a lógica de salvar no banco
+  }
+
+  const getYoutubeEmbedUrl = (url: string) => {
+    if (!url) return null
+    let videoId = ''
+    if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0]
+    else if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0]
+    else if (url.includes('embed/')) videoId = url.split('embed/')[1].split('?')[0]
+    
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
       
       {/* Banner Hero */}
-      <div className="relative h-[300px] md:h-[400px] w-full overflow-hidden">
+      <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden">
         <Image
           src={supplier.coverImage}
           alt={supplier.name}
@@ -113,7 +158,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         
         <div className="container relative h-full mx-auto px-4">
           <Link 
@@ -134,7 +179,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
               <div className="flex flex-col md:flex-row items-center md:items-end gap-8 p-8">
                 {/* Logo */}
                 <div className="relative -mt-20 md:mt-0">
-                  <div className="w-32 h-32 md:w-44 md:h-44 rounded-3xl border-4 border-card overflow-hidden bg-card shadow-2xl">
+                  <div className="w-32 h-32 md:w-44 md:h-44 rounded-full border-4 border-card overflow-hidden bg-card shadow-2xl">
                     <Image
                       src={supplier.logo}
                       alt={supplier.name}
@@ -144,7 +189,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
                     />
                   </div>
                   {supplier.verified && (
-                    <div className="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-2xl shadow-xl border-4 border-card">
+                    <div className="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full shadow-xl border-4 border-card">
                       <BadgeCheck className="w-6 h-6" />
                     </div>
                   )}
@@ -179,19 +224,22 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
 
                 {/* Actions */}
                 <div className="flex flex-col gap-3 w-full md:w-auto">
-                  <Button size="lg" className="rounded-2xl h-14 px-8 text-base font-bold gap-3 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all bg-green-500 hover:bg-green-600 border-none" asChild>
-                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="w-5 h-5" />
-                      WhatsApp Direto
-                    </a>
+                  <Button 
+                    size="lg" 
+                    className={`rounded-2xl h-14 px-8 text-base font-bold gap-3 shadow-xl transition-all border-none ${isFollowing ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'}`}
+                    onClick={handleFollow}
+                  >
+                    <UserPlus className="w-5 h-5" />
+                    {isFollowing ? 'Seguindo' : 'Seguir Loja'}
                   </Button>
                   <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1 rounded-2xl h-12 border-border/40 hover:bg-muted font-bold">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 rounded-2xl h-12 border-border/40 hover:bg-muted font-bold"
+                      onClick={handleShare}
+                    >
                       <Share2 className="w-4 h-4 mr-2" />
                       Compartilhar
-                    </Button>
-                    <Button variant="outline" className="rounded-2xl h-12 w-12 border-border/40 hover:bg-muted p-0">
-                      <Heart className="w-5 h-5" />
                     </Button>
                   </div>
                 </div>
@@ -215,15 +263,38 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium px-4 py-2 bg-muted/30 rounded-xl border border-border/40">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Fornecedor verificado e ativo
+            <div className="flex flex-wrap items-center gap-4">
+              <Button variant="outline" className="rounded-xl h-11 gap-2 font-bold" onClick={handleShare}>
+                <Share2 className="w-4 h-4" />
+                Compartilhar Catálogo
+              </Button>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium px-4 py-2 bg-muted/30 rounded-xl border border-border/40">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                Fornecedor verificado e ativo
+              </div>
             </div>
           </div>
 
           <TabsContent value="produtos" className="mt-0">
+            {/* Filters and Search */}
+            <div className="flex flex-col md:flex-row gap-4 mb-8">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Buscar produtos neste catálogo..." 
+                  className="pl-10 h-12 rounded-xl border-border/40 bg-card"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button variant="outline" className="h-12 rounded-xl gap-2 font-bold px-6">
+                <Filter className="w-4 h-4" />
+                Filtros
+              </Button>
+            </div>
+
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {supplierProducts.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={{
                   ...product,
                   wholesalePrice: product.price || 0,
@@ -236,7 +307,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
               ))}
             </div>
             
-            {supplierProducts.length === 0 && (
+            {filteredProducts.length === 0 && (
               <div className="text-center py-20 bg-muted/20 rounded-3xl border border-dashed border-border/60">
                 <p className="text-muted-foreground text-lg">Nenhum produto cadastrado no momento.</p>
               </div>
@@ -246,24 +317,53 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
           <TabsContent value="sobre" className="mt-0">
             <Card className="rounded-3xl border-border/40 bg-card/50">
               <CardContent className="p-10">
-                <h3 className="text-2xl font-bold mb-6">Sobre a {supplier.name}</h3>
-                <p className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line mb-8">
-                  {supplier.bio || "Nenhuma descrição detalhada disponível para este fornecedor."}
-                </p>
-                <div className="grid md:grid-cols-3 gap-8">
-                  <div className="p-6 rounded-2xl bg-muted/30 border border-border/40">
-                    <h4 className="font-bold mb-2">Estado</h4>
-                    <p className="text-muted-foreground">{supplier.state}</p>
+                <div className="grid lg:grid-cols-2 gap-12">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-6">Sobre a {supplier.name}</h3>
+                    <p className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line mb-8">
+                      {supplier.bio || "Nenhuma descrição detalhada disponível para este fornecedor."}
+                    </p>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="p-4 rounded-2xl bg-muted/30 border border-border/40">
+                        <h4 className="font-bold text-sm mb-1">Estado</h4>
+                        <p className="text-sm text-muted-foreground">{supplier.state}</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-muted/30 border border-border/40">
+                        <h4 className="font-bold text-sm mb-1">Especialidade</h4>
+                        <p className="text-sm text-muted-foreground">{supplier.category}</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-muted/30 border border-border/40">
+                        <h4 className="font-bold text-sm mb-1">Plano</h4>
+                        <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">
+                          {supplier.plan}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                  <div className="p-6 rounded-2xl bg-muted/30 border border-border/40">
-                    <h4 className="font-bold mb-2">Especialidade</h4>
-                    <p className="text-muted-foreground">{supplier.category}</p>
-                  </div>
-                  <div className="p-6 rounded-2xl bg-muted/30 border border-border/40">
-                    <h4 className="font-bold mb-2">Plano</h4>
-                    <Badge variant="outline" className="border-primary/30 text-primary">
-                      {supplier.plan}
-                    </Badge>
+
+                  {/* YouTube Embed */}
+                  <div>
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                      <Youtube className="w-5 h-5 text-red-600" />
+                      Vídeo de Apresentação
+                    </h3>
+                    {supplier.youtube_video_url ? (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-border/40 shadow-xl bg-black">
+                        <iframe
+                          className="absolute inset-0 w-full h-full"
+                          src={getYoutubeEmbedUrl(supplier.youtube_video_url) || ''}
+                          title="YouTube video player"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    ) : (
+                      <div className="aspect-video rounded-2xl border-2 border-dashed border-border/60 flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
+                        <Youtube className="w-12 h-12 mb-2 opacity-20" />
+                        <p className="text-sm">Nenhum vídeo disponível</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

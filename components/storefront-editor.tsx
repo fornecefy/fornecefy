@@ -28,6 +28,7 @@ interface StorefrontData {
   category: string
   whatsapp: string
   slug?: string
+  youtubeUrl?: string
 }
 
 interface StorefrontEditorProps {
@@ -112,6 +113,16 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`
   }
 
+  const getYoutubeEmbedUrl = (url: string | undefined) => {
+    if (!url) return null
+    let videoId = ''
+    if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0]
+    else if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0]
+    else if (url.includes('embed/')) videoId = url.split('embed/')[1].split('?')[0]
+    
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+  }
+
   return (
     <div className="space-y-6">
       {/* Preview Toggle */}
@@ -194,9 +205,25 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
                 </p>
               </div>
             </div>
-            <div className="mt-6">
-              <h4 className="font-medium text-foreground mb-2">Sobre Nós</h4>
-              <p className="text-muted-foreground">{data.bio}</p>
+            <div className="mt-6 grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-medium text-foreground mb-2">Sobre Nós</h4>
+                <p className="text-muted-foreground whitespace-pre-line">{data.bio}</p>
+              </div>
+              {data.youtubeUrl && (
+                <div>
+                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                    <Save className="w-4 h-4" /> Vídeo de Apresentação
+                  </h4>
+                  <div className="aspect-video rounded-xl bg-black overflow-hidden border border-border">
+                    <iframe
+                      className="w-full h-full"
+                      src={getYoutubeEmbedUrl(data.youtubeUrl) || ''}
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -437,6 +464,22 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
                 />
                 <p className="text-xs text-muted-foreground">
                   {(data.bio || '').length}/500 caracteres
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="youtube" className="flex items-center gap-2">
+                  <Save className="w-4 h-4 text-red-600" /> 
+                  URL do Vídeo de Apresentação (YouTube)
+                </Label>
+                <Input
+                  id="youtube"
+                  value={data.youtubeUrl || ''}
+                  onChange={(e) => setData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Cole o link completo do vídeo que apresenta sua empresa ou seus produtos.
                 </p>
               </div>
             </CardContent>

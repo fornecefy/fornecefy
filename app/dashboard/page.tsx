@@ -36,6 +36,7 @@ const navItems = [
   { id: 'vitrine', label: 'Vitrine', icon: Store },
   { id: 'produtos', label: 'Produtos', icon: Package },
   { id: 'leads', label: 'Leads', icon: Users },
+  { id: 'following', label: 'Lojas que Sigo', icon: Store },
   { id: 'perfil', label: 'Perfil', icon: User },
   { id: 'plano', label: 'Plano', icon: CreditCard },
 ]
@@ -110,6 +111,7 @@ export default function DashboardPage() {
         min_order_value: formData.minOrderValue,
         category: formData.category,
         whatsapp: formData.whatsapp,
+        youtube_video_url: formData.youtubeUrl,
       }
 
       let error;
@@ -186,6 +188,7 @@ export default function DashboardPage() {
     category: '',
     whatsapp: user.phone || '',
     slug: '',
+    youtubeUrl: '',
     plan: 'Básico'
   }
 
@@ -377,9 +380,36 @@ export default function DashboardPage() {
                 category: currentSupplier.category || 'Geral',
                 whatsapp: currentSupplier.whatsapp || currentSupplier.phone || '',
                 slug: currentSupplier.slug || '',
+                youtubeUrl: currentSupplier.youtube_video_url || '',
               }}
               onSave={handleStorefrontSave}
             />
+          )}
+
+          {activeSection === 'following' && (
+            <div className="space-y-6">
+              <Card className="bg-card border-border">
+                <CardHeader>
+                  <CardTitle>Lojas que Sigo</CardTitle>
+                  <CardDescription>
+                    Fornecedores que você acompanha para receber novidades
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <User className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-1">
+                      Nenhuma loja seguida
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-xs">
+                      Siga fornecedores para encontrá-los facilmente aqui.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {activeSection === 'produtos' && (
