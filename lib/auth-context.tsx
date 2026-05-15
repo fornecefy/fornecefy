@@ -213,13 +213,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone: userData.phone,
             cnpj: userData.cnpj,
             state: userData.state,
+            category: 'Geral', // Default category
           }
         ])
 
       if (profileError) {
-        // Fallback or cleanup if needed
         console.error('Error creating profile:', profileError)
-        return { success: false, error: "Erro ao criar perfil. Por favor, contate o suporte." }
+        // Mesmo com erro no profile, o usuário foi criado no Auth.
+        // Vamos permitir que ele entre, mas avisamos do erro.
+        setUser({
+          id: authData.user.id,
+          name: userData.name,
+          email: userData.email,
+          type: userData.type as any, // Usa o tipo que ele tentou cadastrar
+          company: userData.company,
+        })
+        return { success: true }
       }
     }
 

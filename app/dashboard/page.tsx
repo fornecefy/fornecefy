@@ -138,7 +138,8 @@ export default function DashboardPage() {
         alert('Vitrine atualizada com sucesso!')
       }
       
-      setCurrentSupplier((prev: any) => ({ ...prev, ...formData }))
+      const updatedData = { ...currentSupplier, ...baseUpdate, ...extraFields }
+      setCurrentSupplier(updatedData)
       await fetchSupplierData()
     } catch (err: any) {
       console.error('Erro ao salvar vitrine:', err)
@@ -242,7 +243,7 @@ export default function DashboardPage() {
 
           {/* View Storefront & Back */}
           <div className="p-4 border-t border-sidebar-border space-y-2">
-            <Link href={`/fornecedor/${currentSupplier.id}`} target="_blank">
+            <Link href={`/fornecedor/${currentSupplier.slug || currentSupplier.id}`} target="_blank">
               <Button variant="outline" className="w-full gap-2 text-sidebar-foreground border-sidebar-border hover:bg-sidebar-accent">
                 <ExternalLink className="w-4 h-4" />
                 Ver Minha Vitrine
