@@ -46,6 +46,8 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState as useReactState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Loader2 } from 'lucide-react'
+import { SupplierForm } from '@/components/supplier-form'
+import { ProductForm } from '@/components/product-form'
 
 export default function MasterAdminPage() {
   const [searchTerm, setSearchTerm] = useReactState('')
@@ -56,6 +58,12 @@ export default function MasterAdminPage() {
   const [suppliers, setSuppliers] = useReactState<any[]>([])
   const [products, setProducts] = useReactState<any[]>([])
   const [isLoadingData, setIsLoadingData] = useReactState(true)
+
+  // Modal states
+  const [showSupplierForm, setShowSupplierForm] = useReactState(false)
+  const [showProductForm, setShowProductForm] = useReactState(false)
+  const [editingId, setEditingId] = useReactState<string | undefined>(undefined)
+  const [initialSupplierId, setInitialSupplierId] = useReactState<string | undefined>(undefined)
 
   const MASTER_EMAIL = 'fornecefy@gmail.com'
 
@@ -200,9 +208,12 @@ export default function MasterAdminPage() {
               <BarChart3 className="w-4 h-4" />
               Sincronizar
             </Button>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => {
+              setEditingId(undefined)
+              setShowSupplierForm(true)
+            }}>
               <Plus className="w-4 h-4" />
-              Novo Cadastro
+              Novo Fornecedor
             </Button>
           </div>
         </div>
@@ -425,7 +436,15 @@ export default function MasterAdminPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-primary"
+                                onClick={() => {
+                                  setEditingId(s.id)
+                                  setShowSupplierForm(true)
+                                }}
+                              >
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteSupplier(s.id)}>
@@ -448,6 +467,17 @@ export default function MasterAdminPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle>Gestão Global de Produtos</CardTitle>
                   <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm" 
+                      className="gap-2"
+                      onClick={() => {
+                        setEditingId(undefined)
+                        setShowProductForm(true)
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Novo Produto
+                    </Button>
                     <div className="relative">
                       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -509,7 +539,7 @@ export default function MasterAdminPage() {
                             {p.sku || 'N/A'}
                           </TableCell>
                           <TableCell>
-                            {p.price ? `R$ ${p.price.toFixed(2)}` : 'Sob consulta'}
+                            {p.retail_price ? `R$ ${p.retail_price.toFixed(2)}` : 'Sob consulta'}
                           </TableCell>
                           <TableCell>
                             {p.wholesale_price ? `R$ ${p.wholesale_price.toFixed(2)}` : '-'}
@@ -526,7 +556,15 @@ export default function MasterAdminPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-primary"
+                                onClick={() => {
+                                  setEditingId(p.id)
+                                  setShowProductForm(true)
+                                }}
+                              >
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProduct(p.id)}>
@@ -667,6 +705,28 @@ export default function MasterAdminPage() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Modais de Edição e Cadastro */}
+      {showSupplierForm && (
+        <SupplierForm 
+          supplierId={editingId}
+          onClose={() => setShowSupplierForm(false)}
+          onSuccess={() => {
+            fetchAdminData()
+          }}
+        />
+      )}
+
+      {showProductForm && (
+        <ProductForm 
+          productId={editingId}
+          initialSupplierId={initialSupplierId}
+          onClose={() => setShowProductForm(false)}
+          onSuccess={() => {
+            fetchAdminData()
+          }}
+        />
+      )}
     </div>
   )
 }

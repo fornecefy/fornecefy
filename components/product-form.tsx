@@ -28,13 +28,16 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 
 interface ProductFormProps {
+  productId?: string
+  initialSupplierId?: string
   onClose: () => void
   onSuccess: () => void
 }
 
-export function ProductForm({ onClose, onSuccess }: ProductFormProps) {
+export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }: ProductFormProps) {
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState('')
 
@@ -51,8 +54,53 @@ export function ProductForm({ onClose, onSuccess }: ProductFormProps) {
     gallery: [] as string[],
     sku: '',
     videoUrl: '',
-    modalities: ['Atacado'] as string[]
+    modalities: ['Atacado'] as string[],
+    supplier_id: initialSupplierId || user?.id
   })
+
+  useEffect(() => {
+    if (productId) {
+      fetchProduct()
+    }
+  }, [productId])
+
+  const fetchProduct = async () => {
+    setIsFetching(true)
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single()
+      
+      if (error) throw error
+      if (data) {
+        setFormData({
+          name: data.name || '',
+          category: data.category || '',
+          description: data.description || '',
+          wholesalePrice: data.wholesale_price?.toString() || '',
+          retailPrice: data.retail_price?.toString() || '',
+          dropshippingPrice: data.dropshipping_price?.toString() || '',
+          minQuantity: data.min_quantity?.toString() || '1',
+          readyToShip: data.ready_to_ship ?? true,
+          image: data.image_url || '',
+          gallery: data.gallery_urls || [],
+          sku: data.sku || '',
+          videoUrl: data.video_url || '',
+          modalities: data.modalities || ['Atacado'],
+          supplier_id: data.supplier_id
+        })
+      }
+    } catch (err: any) {
+      setError('Erro ao buscar produto: ' + err.message)
+    } finally {
+      setIsFetching(false)
+    }
+  }
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, isGallery = false) => {
+    // ... manter lógica de upload ...
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, isGallery = false) => {
     const file = e.target.files?.[0]
@@ -120,29 +168,36 @@ export function ProductForm({ onClose, onSuccess }: ProductFormProps) {
     setError('')
 
     try {
-      const { error: dbError } = await supabase
-        .from('products')
-        .insert([
-          {
-            name: formData.name,
-            category: formData.category,
-            description: formData.description,
-            wholesale_price: parseFloat(formData.wholesalePrice),
-            retail_price: formData.retailPrice ? parseFloat(formData.retailPrice) : null,
-            dropshipping_price: formData.dropshippingPrice ? parseFloat(formData.dropshippingPrice) : null,
-            min_quantity: parseInt(formData.minQuantity),
-            ready_to_ship: formData.readyToShip,
-            image_url: formData.image,
-            gallery_urls: formData.gallery,
-            sku: formData.sku,
-            video_url: formData.videoUrl,
-            supplier_id: user?.id,
-            modalities: formData.modalities,
-            status: 'active'
-          }
-        ])
+      const productData = {
+        name: formData.name,
+        category: formData.category,
+        description: formData.description,
+        wholesale_price: parseFloat(formData.wholesalePrice),
+        retail_price: formData.retailPrice ? parseFloat(formData.retailPrice) : null,
+        dropshipping_price: formData.dropshippingPrice ? parseFloat(formData.dropshippingPrice) : null,
+        min_quantity: parseInt(formData.minQuantity),
+        ready_to_ship: formData.readyToShip,
+        image_url: formData.image,
+        gallery_urls: formData.gallery,
+        sku: formData.sku,
+        video_url: formData.videoUrl,
+        supplier_id: formData.supplier_id,
+        modalities: formData.modalities,
+        status: 'active'
+      }
 
-      if (dbError) throw dbError
+      if (productId) {
+        const { error: dbError } = await supabase
+          .from('products')
+          .update(productData)
+          .eq('id', productId)
+        if (dbError) throw dbError
+      } else {
+        const { error: dbError } = await supabase
+          .from('products')
+          .insert([productData])
+        if (dbError) throw dbError
+      }
 
       onSuccess()
       onClose()
@@ -157,7 +212,7 @@ export function ProductForm({ onClose, onSuccess }: ProductFormProps) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-card border border-border w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
         <div className="sticky top-0 bg-card/80 backdrop-blur-md border-b p-4 flex items-center justify-between z-10">
-          <h2 className="text-xl font-bold">Cadastrar Novo Produto</h2>
+          <h2 className="text-xl font-bold">{productId ? 'Editar Produto' : 'Cadastrar Novo Produto'}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
