@@ -29,10 +29,18 @@ function LoginContent() {
     setError('')
     setIsLoading(true)
 
-    const { success, error } = await login(email, password)
+    const { success, error, userType } = await login(email, password)
     
     if (success) {
-      router.push(redirect)
+      if (email === 'fornecefy@gmail.com') {
+        router.push('/master-admin')
+      } else if (userType === 'fornecedor') {
+        router.push('/dashboard')
+      } else if (userType === 'comprador') {
+        router.push('/minha-conta')
+      } else {
+        router.push(redirect)
+      }
     } else {
       setError(error || 'E-mail ou senha inválidos')
     }

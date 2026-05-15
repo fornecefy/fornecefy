@@ -20,7 +20,7 @@ export interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; userType?: UserType }>
   register: (userData: Omit<User, 'id'> & { password: string }) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
 }
@@ -116,14 +116,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const { error } = await supabase.auth.signInWithPassword({
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; userType?: UserType }> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
       return { success: false, error: error.message }
+    }
+
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('type')
+        .eq('id', data.user.id)
+        .single()
+      
+      return { success: true, userType: profile?.type }
     }
 
     return { success: true }
