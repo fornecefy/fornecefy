@@ -93,28 +93,48 @@ export default function DashboardPage() {
   const handleStorefrontSave = async (formData: any) => {
     setIsDataLoading(true)
     try {
-      const { error } = await supabase
+      // Campos que sabemos que existem na tabela profiles
+      const baseUpdate: any = {
+        name: formData.name,
+        state: formData.state,
+        phone: formData.whatsapp,
+        slug: formData.slug,
+      }
+
+      // Campos extras que podem ou não existir
+      const extraFields: any = {
+        bio: formData.bio,
+        logo_url: formData.logo,
+        cover_url: formData.coverImage,
+        min_order_value: formData.minOrderValue,
+        category: formData.category,
+        whatsapp: formData.whatsapp,
+      }
+
+      // Tenta salvar todos os campos de uma vez
+      let { error } = await supabase
         .from('profiles')
-        .update({
-          name: formData.name,
-          logo_url: formData.logo,
-          cover_url: formData.coverImage,
-          bio: formData.bio,
-          min_order_value: formData.minOrderValue,
-          state: formData.state,
-          category: formData.category,
-          phone: formData.whatsapp,
-          slug: formData.slug
-        })
+        .update({ ...baseUpdate, ...extraFields })
         .eq('id', user?.id)
 
-      if (error) throw error
+      if (error) {
+        // Se falhar, tenta salvar apenas os campos base
+        console.warn('Erro com campos extras, tentando apenas campos base:', error.message)
+        const { error: baseError } = await supabase
+          .from('profiles')
+          .update(baseUpdate)
+          .eq('id', user?.id)
+
+        if (baseError) throw baseError
+        
+        alert('Dados básicos salvos! Para salvar bio, logo e capa, execute o SQL de migração no Supabase.')
+      }
       
-      setCurrentSupplier(prev => ({ ...prev, ...formData }))
+      setCurrentSupplier((prev: any) => ({ ...prev, ...formData }))
       await fetchSupplierData()
     } catch (err: any) {
       console.error('Erro ao salvar vitrine:', err)
-      alert('Erro ao salvar as alterações da vitrine.')
+      alert('Erro ao salvar: ' + (err.message || JSON.stringify(err)))
     } finally {
       setIsDataLoading(false)
     }
