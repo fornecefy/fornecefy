@@ -61,7 +61,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
           const { data: prods } = await supabase
             .from('products')
             .select('*')
-            .eq('supplier_id', profile.id)
+            .or(`supplier_id.eq.${profile.id},supplier_id.eq.${profile.user_id}`)
           
           if (prods) setSupplierProducts(prods)
         }

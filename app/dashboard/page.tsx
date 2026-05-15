@@ -66,9 +66,9 @@ export default function DashboardPage() {
     try {
       // Perfil
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+        .from('suppliers')
         .select('*')
-        .eq('id', user?.id)
+        .eq('user_id', user?.id)
         .single()
       
       if (profile) {
@@ -114,9 +114,9 @@ export default function DashboardPage() {
 
       // Tenta salvar todos os campos de uma vez
       let { error } = await supabase
-        .from('profiles')
+        .from('suppliers')
         .update({ ...baseUpdate, ...extraFields })
-        .eq('id', user?.id)
+        .eq('user_id', user?.id)
 
       if (error) {
         console.error('Erro detalhado ao salvar vitrine:', error)
@@ -125,9 +125,9 @@ export default function DashboardPage() {
         if (error.code === 'PGRST204' || error.message.includes('column') || error.message.includes('does not exist')) {
           console.warn('Colunas faltando no banco, tentando salvar apenas dados básicos...')
           const { error: baseError } = await supabase
-            .from('profiles')
+            .from('suppliers')
             .update(baseUpdate)
-            .eq('id', user?.id)
+            .eq('user_id', user?.id)
 
           if (baseError) throw baseError
           alert('Dados básicos salvos! As fotos e bio não foram salvas porque as colunas não existem no seu banco de dados Supabase. Execute o SQL de migração para corrigir.')
@@ -371,6 +371,7 @@ export default function DashboardPage() {
               {editingProductId ? (
                 <ProductForm 
                   productId={editingProductId === 'new' ? undefined : editingProductId}
+                  initialSupplierId={currentSupplier?.id}
                   onClose={() => setEditingProductId(null)}
                   onSuccess={() => {
                     setEditingProductId(null)

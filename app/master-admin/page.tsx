@@ -558,8 +558,8 @@ export default function MasterAdminPage() {
                                 </select>
                               </TableCell>
                               <TableCell>
-                                <Badge variant={s.status === 'active' ? 'default' : 'destructive'} className="rounded-full text-[10px]">
-                                  {s.status === 'active' ? 'Ativo' : 'Bloqueado'}
+                                <Badge variant={s.status === 'approved' ? 'default' : 'destructive'} className="rounded-full text-[10px]">
+                                  {s.status === 'approved' ? 'Ativo' : s.status === 'pending' ? 'Pendente' : 'Bloqueado'}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">

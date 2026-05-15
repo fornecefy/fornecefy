@@ -44,7 +44,7 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
     state: '',
     city: '',
     plan: 'Básico',
-    status: 'active',
+    status: 'approved',
     logo: '',
     verified: false,
     description: ''
@@ -75,7 +75,7 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
           state: data.state || '',
           city: data.city || '',
           plan: data.plan || 'Básico',
-          status: data.status || 'active',
+          status: data.status || 'approved',
           logo: data.logo || '',
           verified: data.verified || false,
           description: data.description || ''
