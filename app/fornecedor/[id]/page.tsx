@@ -58,13 +58,21 @@ function SupplierContent({ supplierId }: { supplierId: string }) {
         }
         
         if (profile) {
-          setSupplier(profile)
+          // Mapeia campos do banco para campos da UI
+          const mappedProfile = {
+            ...profile,
+            logo: profile.logo_url || '/placeholder-logo.png',
+            coverImage: profile.cover_url || '/placeholder.jpg',
+            minOrderValue: profile.min_order_value || 0,
+            whatsapp: profile.phone || profile.whatsapp || '',
+          }
+          setSupplier(mappedProfile)
           
-          // Busca Produtos
+          // Busca Produtos usando o ID real do perfil (profile.id)
           const { data: prods } = await supabase
             .from('products')
             .select('*')
-            .eq('supplier_id', supplierId)
+            .eq('supplier_id', profile.id)
             .eq('is_active', true)
           
           if (prods) setSupplierProducts(prods)
