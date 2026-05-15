@@ -118,7 +118,7 @@ function SupplierContent({ supplierId }: { supplierId: string }) {
       {/* Cover Image */}
       <div className="relative h-48 md:h-64 bg-muted">
         <Image
-          src={supplier.coverImage}
+          src={supplier.coverImage || '/placeholder.jpg'}
           alt={`Capa de ${supplier.name}`}
           fill
           className="object-cover"
@@ -132,7 +132,7 @@ function SupplierContent({ supplierId }: { supplierId: string }) {
           <div className="flex flex-col md:flex-row md:items-end gap-4">
             <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-lg border-4 border-background bg-card overflow-hidden shadow-lg">
               <Image
-                src={supplier.logo}
+                src={supplier.logo || '/placeholder-logo.png'}
                 alt={`Logo de ${supplier.name}`}
                 fill
                 className="object-cover"

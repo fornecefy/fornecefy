@@ -44,34 +44,61 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string)
-        setData(prev => ({ ...prev, logo: reader.result as string }))
-      }
-      reader.readAsDataURL(file)
+  const [isUploading, setIsUploading] = useState(false)
+
+  const uploadFile = async (file: File): Promise<string | null> => {
+    const uploadData = new FormData()
+    uploadData.append('file', file)
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: uploadData })
+      const json = await res.json()
+      if (json.url) return json.url
+      console.error('Upload error:', json.error)
+      return null
+    } catch (err) {
+      console.error('Upload failed:', err)
+      return null
     }
   }
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setCoverPreview(reader.result as string)
-        setData(prev => ({ ...prev, coverImage: reader.result as string }))
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
+    // Preview imediato
+    const reader = new FileReader()
+    reader.onloadend = () => setLogoPreview(reader.result as string)
+    reader.readAsDataURL(file)
+    // Upload real
+    setIsUploading(true)
+    const url = await uploadFile(file)
+    if (url) {
+      setData(prev => ({ ...prev, logo: url }))
     }
+    setIsUploading(false)
+  }
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Preview imediato
+    const reader = new FileReader()
+    reader.onloadend = () => setCoverPreview(reader.result as string)
+    reader.readAsDataURL(file)
+    // Upload real
+    setIsUploading(true)
+    const url = await uploadFile(file)
+    if (url) {
+      setData(prev => ({ ...prev, coverImage: url }))
+    }
+    setIsUploading(false)
   }
 
   const handleSave = async () => {
+    if (isUploading) {
+      alert('Aguarde o upload das imagens terminar.')
+      return
+    }
     setIsSaving(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
     onSave(data)
     setIsSaving(false)
   }
@@ -113,15 +140,20 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
           </Button>
           <Button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || isUploading}
             className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            {isSaving ? (
+            {isUploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Enviando imagem...
+              </>
+            ) : isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Save className="w-4 h-4" />
             )}
-            Salvar Alterações
+            {!isUploading && (isSaving ? 'Salvando...' : 'Salvar Alterações')}
           </Button>
         </div>
       </div>
