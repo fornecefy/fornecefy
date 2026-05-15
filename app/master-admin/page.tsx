@@ -43,14 +43,12 @@ import {
   TableRow 
 } from '@/components/ui/table'
 import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
 import { Header } from '@/components/header'
 import { Plan } from '@/lib/data'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState as useReactState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Loader2 } from 'lucide-react'
 import { SupplierForm } from '@/components/supplier-form'
 import { ProductForm } from '@/components/product-form'
 
