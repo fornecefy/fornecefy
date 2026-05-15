@@ -13,16 +13,32 @@ import { useAuth } from '@/lib/auth-context'
 import { Suspense } from 'react'
 
 function LoginContent() {
+  const { user, login, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/'
-  const { login } = useAuth()
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Redireciona se já estiver logado
+  useEffect(() => {
+    if (!isAuthLoading && user) {
+      console.log('Login: Usuário já logado, redirecionando...', user.email)
+      if (user.email.toLowerCase() === 'fornecefy@gmail.com') {
+        router.replace('/master-admin')
+      } else if (user.type === 'fornecedor') {
+        router.replace('/dashboard')
+      } else if (user.type === 'comprador') {
+        router.replace('/minha-conta')
+      } else {
+        router.replace(redirect)
+      }
+    }
+  }, [user, isAuthLoading, router, redirect])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

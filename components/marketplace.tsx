@@ -72,8 +72,19 @@ export function Marketplace() {
     fetchData()
   }, [])
 
-  const suppliers = realSuppliers.length > 0 ? realSuppliers : mockSuppliers
+  const allSuppliers = realSuppliers.length > 0 ? realSuppliers : mockSuppliers
   const activeProducts = realProducts.length > 0 ? realProducts : products
+
+  const suppliers = useMemo(() => {
+    if (!searchQuery) return allSuppliers
+    const query = searchQuery.toLowerCase()
+    return allSuppliers.filter(s => 
+      s.name.toLowerCase().includes(query) || 
+      s.email?.toLowerCase().includes(query) || 
+      s.bio.toLowerCase().includes(query) || 
+      s.category.toLowerCase().includes(query)
+    )
+  }, [allSuppliers, searchQuery])
 
   const filteredProducts = useMemo(() => {
     return activeProducts.filter((product) => {
@@ -249,7 +260,7 @@ export function Marketplace() {
                 </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {suppliers.slice(0, 4).map((supplier) => (
+                {suppliers.slice(0, searchQuery ? 12 : 3).map((supplier) => (
                   <SupplierCard key={supplier.id} supplier={supplier} />
                 ))}
               </div>

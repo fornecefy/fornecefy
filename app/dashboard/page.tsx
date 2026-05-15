@@ -347,7 +347,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Section Content */}
-          {activeSection === 'vitrine' && (
+          {activeSection === 'vitrine' && currentSupplier && (
             <StorefrontEditor
               initialData={{
                 name: currentSupplier.name || '',
