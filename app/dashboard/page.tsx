@@ -29,6 +29,7 @@ import { dashboardMetrics, leads, formatCurrency } from '@/lib/data'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 const navItems = [
   { id: 'vitrine', label: 'Vitrine', icon: Store },
@@ -42,20 +43,25 @@ export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState('vitrine')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAddingProduct, setIsAddingProduct] = useState(false)
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
+  const router = useRouter()
 
   const [currentSupplier, setCurrentSupplier] = useState<any>(null)
   const [supplierProducts, setSupplierProducts] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isDataLoading, setIsDataLoading] = useState(true)
 
   useEffect(() => {
+    if (!isAuthLoading && !user) {
+      router.push('/login?redirect=/dashboard')
+      return
+    }
     if (user?.id) {
       fetchSupplierData()
     }
-  }, [user])
+  }, [user, isAuthLoading])
 
   const fetchSupplierData = async () => {
-    setIsLoading(true)
+    setIsDataLoading(true)
     try {
       // Perfil
       const { data: profile, error: profileError } = await supabase
@@ -80,12 +86,12 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Erro ao carregar dados do dashboard:', err)
     } finally {
-      setIsLoading(false)
+      setIsDataLoading(false)
     }
   }
 
   const handleStorefrontSave = async (formData: any) => {
-    setIsLoading(true)
+    setIsDataLoading(true)
     try {
       const { error } = await supabase
         .from('profiles')
@@ -110,11 +116,11 @@ export default function DashboardPage() {
       console.error('Erro ao salvar vitrine:', err)
       alert('Erro ao salvar as alterações da vitrine.')
     } finally {
-      setIsLoading(false)
+      setIsDataLoading(false)
     }
   }
 
-  if (!user || isLoading) {
+  if (isAuthLoading || !user || isDataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

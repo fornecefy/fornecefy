@@ -77,18 +77,26 @@ export default function MasterAdminPage() {
   const MASTER_EMAIL = 'fornecefy@gmail.com'
 
   useEffect(() => {
-    if (!isAuthLoading) {
-      if (!user) {
-        router.push('/login?redirect=/master-admin')
-      } else if (user.email !== MASTER_EMAIL) {
-        router.push('/')
-      } else {
-        setIsAuthorized(true)
-        fetchAdminData()
-        fetchPlatformSettings()
-      }
+    console.log('MasterAdmin useEffect:', { isAuthLoading, user: user?.email, isAuthorized })
+    if (isAuthLoading) return // Aguarda auth carregar
+    
+    if (!user) {
+      console.log('MasterAdmin: Sem usuário logado, redirecionando para login...')
+      router.push('/login?redirect=/master-admin')
+      return
     }
-  }, [user, isAuthLoading, router])
+    
+    if (user.email !== MASTER_EMAIL) {
+      console.log('MasterAdmin: Usuário não é admin:', user.email)
+      router.push('/')
+      return
+    }
+    
+    console.log('MasterAdmin: Acesso autorizado! Carregando dados...')
+    setIsAuthorized(true)
+    fetchAdminData()
+    fetchPlatformSettings()
+  }, [user, isAuthLoading])
 
   const fetchPlatformSettings = async () => {
     try {

@@ -36,23 +36,23 @@ function LoginContent() {
       console.log('Login successful, determining redirect...')
       if (email === 'fornecefy@gmail.com') {
         console.log('Redirecting to master-admin')
-        router.push('/master-admin')
+        router.replace('/master-admin')
       } else if (userType === 'fornecedor') {
         console.log('Redirecting to dashboard')
-        router.push('/dashboard')
+        router.replace('/dashboard')
       } else if (userType === 'comprador') {
         console.log('Redirecting to minha-conta')
-        router.push('/minha-conta')
+        router.replace('/minha-conta')
       } else {
         console.log('Redirecting to fallback:', redirect)
-        router.push(redirect)
+        router.replace(redirect)
       }
+      // NÃO resetar isLoading aqui — a navegação vai desmontar este componente
     } else {
       console.error('Login failed:', error)
       setError(error || 'E-mail ou senha inválidos')
+      setIsLoading(false)
     }
-    
-    setIsLoading(false)
   }
 
   return (
