@@ -118,16 +118,24 @@ export default function DashboardPage() {
         .eq('id', user?.id)
 
       if (error) {
-        // Se falhar, tenta salvar apenas os campos base
-        console.warn('Erro com campos extras, tentando apenas campos base:', error.message)
-        const { error: baseError } = await supabase
-          .from('profiles')
-          .update(baseUpdate)
-          .eq('id', user?.id)
-
-        if (baseError) throw baseError
+        console.error('Erro detalhado ao salvar vitrine:', error)
         
-        alert('Dados básicos salvos! Para salvar bio, logo e capa, execute o SQL de migração no Supabase.')
+        // Se o erro for de coluna inexistente (PGRST204), tenta salvar apenas os campos base
+        if (error.code === 'PGRST204' || error.message.includes('column') || error.message.includes('does not exist')) {
+          console.warn('Colunas faltando no banco, tentando salvar apenas dados básicos...')
+          const { error: baseError } = await supabase
+            .from('profiles')
+            .update(baseUpdate)
+            .eq('id', user?.id)
+
+          if (baseError) throw baseError
+          alert('Dados básicos salvos! As fotos e bio não foram salvas porque as colunas não existem no seu banco de dados Supabase. Execute o SQL de migração para corrigir.')
+        } else {
+          // Outro tipo de erro (ex: RLS, conexão)
+          throw error
+        }
+      } else {
+        alert('Vitrine atualizada com sucesso!')
       }
       
       setCurrentSupplier((prev: any) => ({ ...prev, ...formData }))
@@ -343,13 +351,13 @@ export default function DashboardPage() {
             <StorefrontEditor
               initialData={{
                 name: currentSupplier.name || '',
-                logo: currentSupplier.logo || '',
-                coverImage: currentSupplier.coverImage || '',
+                logo: currentSupplier.logo_url || '',
+                coverImage: currentSupplier.cover_url || '',
                 bio: currentSupplier.bio || '',
-                minOrderValue: currentSupplier.minOrderValue || 0,
+                minOrderValue: currentSupplier.min_order_value || 0,
                 state: currentSupplier.state || '',
                 category: currentSupplier.category || 'Geral',
-                whatsapp: currentSupplier.whatsapp || '',
+                whatsapp: currentSupplier.phone || currentSupplier.whatsapp || '',
                 slug: currentSupplier.slug || '',
               }}
               onSave={handleStorefrontSave}
