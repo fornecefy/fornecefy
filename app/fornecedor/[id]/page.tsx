@@ -12,13 +12,64 @@ import { Header } from '@/components/header'
 import { ProductCard } from '@/components/product-card'
 import { CartProvider } from '@/lib/cart-context'
 import { suppliers, formatCurrency } from '@/lib/data'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 interface SupplierPageProps {
   params: Promise<{ id: string }>
 }
 
 function SupplierContent({ supplierId }: { supplierId: string }) {
-  const supplier = suppliers.find((s) => s.id === supplierId)
+  const [supplier, setSupplier] = useState<any>(null)
+  const [supplierProducts, setSupplierProducts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSupplierData = async () => {
+      setIsLoading(true)
+      try {
+        // Busca Perfil
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', supplierId)
+          .single()
+        
+        if (profile) {
+          setSupplier(profile)
+          
+          // Busca Produtos
+          const { data: prods } = await supabase
+            .from('products')
+            .select('*')
+            .eq('supplier_id', supplierId)
+            .eq('is_active', true)
+          
+          if (prods) setSupplierProducts(prods)
+        } else {
+          // Fallback para mock apenas se o ID existir no mock
+          const mockSupplier = suppliers.find((s) => s.id === supplierId)
+          if (mockSupplier) {
+            setSupplier(mockSupplier)
+            setSupplierProducts(mockSupplier.products)
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar vitrine:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchSupplierData()
+  }, [supplierId])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   if (!supplier) {
     return (
@@ -36,7 +87,7 @@ function SupplierContent({ supplierId }: { supplierId: string }) {
     )
   }
 
-  const whatsappUrl = `https://wa.me/${supplier.whatsapp}?text=${encodeURIComponent(
+  const whatsappUrl = `https://wa.me/${supplier.whatsapp || ''}?text=${encodeURIComponent(
     `Olá! Encontrei sua vitrine no Fornecefy e gostaria de saber mais sobre seus produtos.`
   )}`
 
@@ -151,13 +202,13 @@ function SupplierContent({ supplierId }: { supplierId: string }) {
           <TabsContent value="catalogo" className="pt-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-foreground">
-                Produtos ({supplier.products.length})
+                Produtos ({supplierProducts.length})
               </h2>
             </div>
             
-            {supplier.products.length > 0 ? (
+            {supplierProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {supplier.products.map((product) => (
+                {supplierProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
@@ -245,22 +296,6 @@ function SupplierContent({ supplierId }: { supplierId: string }) {
         </Tabs>
       </main>
 
-      {/* Floating WhatsApp Button */}
-      <a
-        href={whatsappUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50"
-      >
-        <Button
-          size="lg"
-          className="bg-[#25D366] hover:bg-[#20BA5C] text-white shadow-lg gap-2 rounded-full px-6"
-        >
-          <MessageCircle className="w-5 h-5" />
-          <span className="hidden sm:inline">Negociar via WhatsApp</span>
-          <span className="sm:hidden">WhatsApp</span>
-        </Button>
-      </a>
     </div>
   )
 }

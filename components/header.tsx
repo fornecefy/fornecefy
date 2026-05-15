@@ -60,11 +60,10 @@ export function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             <Link href="/favoritos">
-              <Button variant="ghost" size="sm" className="relative gap-2">
+              <Button variant="ghost" size="icon" className="relative">
                 <Heart className="h-4 w-4" />
-                Favoritos
                 {favoritesCount > 0 && (
-                  <Badge className="h-5 min-w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+                  <Badge className="absolute -top-1 -right-1 h-4 min-w-4 flex items-center justify-center p-0 bg-red-500 text-white text-[10px]">
                     {favoritesCount}
                   </Badge>
                 )}
@@ -72,11 +71,10 @@ export function Header() {
             </Link>
 
             <Link href="/carrinho">
-              <Button variant="ghost" size="sm" className="relative gap-2">
+              <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-4 w-4" />
-                Orçamento
                 {totalItems > 0 && (
-                  <Badge className="h-5 min-w-5 flex items-center justify-center p-0 bg-accent text-accent-foreground text-xs">
+                  <Badge className="absolute -top-1 -right-1 h-4 min-w-4 flex items-center justify-center p-0 bg-accent text-accent-foreground text-[10px]">
                     {totalItems}
                   </Badge>
                 )}
@@ -109,6 +107,13 @@ export function Header() {
                       <Link href="/dashboard" className="cursor-pointer">
                         <Building2 className="mr-2 h-4 w-4" />
                         Painel do Fornecedor
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : user.type === 'comprador' ? (
+                    <DropdownMenuItem asChild>
+                      <Link href="/minha-conta" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        Minha Conta
                       </Link>
                     </DropdownMenuItem>
                   ) : null}
@@ -193,12 +198,21 @@ export function Header() {
                       Painel do Fornecedor
                     </Link>
                   )}
+                  {user.type === 'comprador' && (
+                    <Link
+                      href="/minha-conta"
+                      className="py-2 text-foreground hover:text-primary"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Minha Conta
+                    </Link>
+                  )}
                   <button
-                    onClick={() => {
-                      logout()
+                    onClick={async () => {
+                      await logout()
                       setMobileMenuOpen(false)
                     }}
-                    className="py-2 text-left text-destructive"
+                    className="py-2 text-left text-destructive w-full"
                   >
                     Sair
                   </button>

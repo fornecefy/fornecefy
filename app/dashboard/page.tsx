@@ -25,7 +25,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { StorefrontEditor } from '@/components/storefront-editor'
 import { ProductForm } from '@/components/product-form'
-import { dashboardMetrics, leads, suppliers, products, formatCurrency } from '@/lib/data'
+import { dashboardMetrics, leads, formatCurrency } from '@/lib/data'
+import { useAuth } from '@/lib/auth-context'
+import { supabase } from '@/lib/supabase'
+import { useEffect } from 'react'
 
 const navItems = [
   { id: 'vitrine', label: 'Vitrine', icon: Store },
@@ -39,25 +42,73 @@ export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState('vitrine')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAddingProduct, setIsAddingProduct] = useState(false)
+  const { user } = useAuth()
 
-  // Demo data - using the first supplier
-  const [currentSupplier, setCurrentSupplier] = useState(suppliers[0])
-  const supplierProducts = products.filter(p => p.supplierId === currentSupplier.id)
+  const [currentSupplier, setCurrentSupplier] = useState<any>(null)
+  const [supplierProducts, setSupplierProducts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const handleStorefrontSave = (data: {
-    name: string
-    logo: string
-    coverImage: string
-    bio: string
-    minOrderValue: number
-    state: string
-    category: string
-    whatsapp: string
-  }) => {
-    setCurrentSupplier(prev => ({
-      ...prev,
-      ...data,
-    }))
+  useEffect(() => {
+    if (user?.id) {
+      fetchSupplierData()
+    }
+  }, [user])
+
+  const fetchSupplierData = async () => {
+    setIsLoading(true)
+    try {
+      // Perfil
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single()
+      
+      if (profile) {
+        setCurrentSupplier(profile)
+      }
+
+      // Produtos
+      const { data: prods, error: prodsError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('supplier_id', user?.id)
+      
+      if (prods) {
+        setSupplierProducts(prods)
+      }
+    } catch (err) {
+      console.error('Erro ao carregar dados do dashboard:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleStorefrontSave = (data: any) => {
+    setCurrentSupplier(prev => ({ ...prev, ...data }))
+    fetchSupplierData() // Recarrega para garantir sincronia
+  }
+
+  if (!user || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  // Garantir que temos um objeto mínimo mesmo se for novo
+  const supplier = currentSupplier || {
+    id: user.id,
+    name: user.name || 'Nova Loja',
+    logo: '',
+    coverImage: '',
+    bio: '',
+    minOrderValue: 0,
+    state: user.state || '',
+    category: '',
+    whatsapp: user.phone || '',
+    plan: 'Básico'
   }
 
   return (
@@ -176,7 +227,7 @@ export default function DashboardPage() {
                       Cliques no WhatsApp
                     </p>
                     <p className="text-3xl font-bold text-foreground">
-                      {dashboardMetrics.whatsappClicks}
+                      0
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-[#25D366]/10 rounded-full flex items-center justify-center">
@@ -185,7 +236,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-1 mt-3 text-sm text-accent">
                   <TrendingUp className="w-4 h-4" />
-                  <span>+12% este mes</span>
+                  <span>0% este mes</span>
                 </div>
               </CardContent>
             </Card>
@@ -198,7 +249,7 @@ export default function DashboardPage() {
                       Visualizacoes da Vitrine
                     </p>
                     <p className="text-3xl font-bold text-foreground">
-                      {dashboardMetrics.storefrontViews.toLocaleString('pt-BR')}
+                      0
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -207,7 +258,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-1 mt-3 text-sm text-accent">
                   <TrendingUp className="w-4 h-4" />
-                  <span>+8% este mes</span>
+                  <span>0% este mes</span>
                 </div>
               </CardContent>
             </Card>
@@ -220,7 +271,7 @@ export default function DashboardPage() {
                       Total de Leads
                     </p>
                     <p className="text-3xl font-bold text-foreground">
-                      {dashboardMetrics.totalLeads}
+                      0
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
@@ -229,7 +280,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-1 mt-3 text-sm text-accent">
                   <TrendingUp className="w-4 h-4" />
-                  <span>+25% este mes</span>
+                  <span>0% este mes</span>
                 </div>
               </CardContent>
             </Card>
@@ -337,40 +388,18 @@ export default function DashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="divide-y divide-border">
-                  {leads.map((lead) => (
-                    <li key={lead.id} className="py-4 first:pt-0 last:pb-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                          <h3 className="font-medium text-foreground">{lead.name}</h3>
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-3 h-3" />
-                              {lead.email}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {lead.phone}
-                            </span>
-                          </div>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            {lead.message}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(lead.date).toLocaleDateString('pt-BR')}
-                          </Badge>
-                          <Button size="sm" className="bg-[#25D366] hover:bg-[#20BA5C] text-white">
-                            <MessageCircle className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    Nenhum lead ainda
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-xs">
+                    Quando lojistas entrarem em contato ou solicitarem orçamentos, eles aparecerão aqui.
+                  </p>
+                </div>
+              </CardContent>nt>
             </Card>
           )}
 

@@ -97,7 +97,7 @@ function CadastroContent() {
     })
     
     if (success) {
-      router.push(userType === 'fornecedor' ? '/dashboard' : '/')
+      router.push(userType === 'fornecedor' ? '/dashboard' : '/minha-conta')
     } else {
       setError(error || 'Erro ao realizar cadastro')
     }
