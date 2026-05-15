@@ -60,18 +60,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               state: profile.state,
             })
           } else {
-            console.warn('AuthContext: Perfil não encontrado no banco.')
-            // Fallback para caso o perfil não seja carregado
-            setUser({
-              id: session.user.id,
-              name: session.user.email!.split('@')[0],
-              email: session.user.email!,
-              type: 'comprador',
-              company: '',
-              phone: '',
-              cnpj: '',
-              state: '',
-            })
+            // Fallback para caso o perfil não seja carregado na tabela profiles
+            const { data: supplierProfile } = await supabase
+              .from('suppliers')
+              .select('name')
+              .eq('user_id', session.user.id)
+              .single()
+
+            if (supplierProfile) {
+              setUser({
+                id: session.user.id,
+                name: supplierProfile.name || 'Fornecedor',
+                email: session.user.email!,
+                type: 'fornecedor',
+              })
+            } else {
+              setUser({
+                id: session.user.id,
+                name: session.user.email!.split('@')[0],
+                email: session.user.email!,
+                type: 'comprador',
+                company: '',
+                phone: '',
+                cnpj: '',
+                state: '',
+              })
+            }
           }
         } else {
           console.log('AuthContext: Nenhuma sessão ativa.')
@@ -109,17 +123,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             state: profile.state,
           })
         } else {
-          console.log('AuthContext: Sessão encontrada, mas sem perfil na tabela profiles.')
-          setUser({
-            id: session.user.id,
-            name: 'Usuário',
-            email: session.user.email!,
-            type: 'comprador',
-            company: '',
-            phone: '',
-            cnpj: '',
-            state: '',
-          })
+          // Fallback
+          const { data: supplierProfile } = await supabase
+            .from('suppliers')
+            .select('name')
+            .eq('user_id', session.user.id)
+            .single()
+
+          if (supplierProfile) {
+            setUser({
+              id: session.user.id,
+              name: supplierProfile.name || 'Fornecedor',
+              email: session.user.email!,
+              type: 'fornecedor',
+            })
+          } else {
+            setUser({
+              id: session.user.id,
+              name: 'Usuário',
+              email: session.user.email!,
+              type: 'comprador',
+              company: '',
+              phone: '',
+              cnpj: '',
+              state: '',
+            })
+          }
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
@@ -162,18 +191,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(userData)
           return { success: true, userType: profile.type }
         } else {
-          // Usuário existe na auth mas não tem perfil (ex: master admin inicial)
+          // Fallback: Verifica se existe na tabela suppliers
+          const { data: supplierProfile } = await supabase
+            .from('suppliers')
+            .select('name')
+            .eq('user_id', data.user.id)
+            .single()
+
+          if (supplierProfile) {
+            setUser({
+              id: data.user.id,
+              name: supplierProfile.name || 'Fornecedor',
+              email: data.user.email!,
+              type: 'fornecedor',
+            })
+            return { success: true, userType: 'fornecedor' }
+          }
+
+          // Se não existir em nenhum lugar, é comprador
           setUser({
             id: data.user.id,
             name: 'Usuário',
             email: data.user.email!,
-            type: 'comprador', // Default fallback
+            type: 'comprador',
             company: '',
             phone: '',
             cnpj: '',
             state: '',
           })
-          return { success: true }
+          return { success: true, userType: 'comprador' }
         }
       }
 
