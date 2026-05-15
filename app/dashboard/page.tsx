@@ -84,9 +84,34 @@ export default function DashboardPage() {
     }
   }
 
-  const handleStorefrontSave = (data: any) => {
-    setCurrentSupplier(prev => ({ ...prev, ...data }))
-    fetchSupplierData() // Recarrega para garantir sincronia
+  const handleStorefrontSave = async (formData: any) => {
+    setIsLoading(true)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: formData.name,
+          logo_url: formData.logo,
+          cover_url: formData.coverImage,
+          bio: formData.bio,
+          min_order_value: formData.minOrderValue,
+          state: formData.state,
+          category: formData.category,
+          phone: formData.whatsapp,
+          slug: formData.slug
+        })
+        .eq('id', user?.id)
+
+      if (error) throw error
+      
+      setCurrentSupplier(prev => ({ ...prev, ...formData }))
+      await fetchSupplierData()
+    } catch (err: any) {
+      console.error('Erro ao salvar vitrine:', err)
+      alert('Erro ao salvar as alterações da vitrine.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (!user || isLoading) {
@@ -108,6 +133,7 @@ export default function DashboardPage() {
     state: user.state || '',
     category: '',
     whatsapp: user.phone || '',
+    slug: '',
     plan: 'Básico'
   }
 
@@ -290,14 +316,15 @@ export default function DashboardPage() {
           {activeSection === 'vitrine' && (
             <StorefrontEditor
               initialData={{
-                name: currentSupplier.name,
-                logo: currentSupplier.logo,
-                coverImage: currentSupplier.coverImage,
-                bio: currentSupplier.bio,
-                minOrderValue: currentSupplier.minOrderValue,
-                state: currentSupplier.state,
-                category: currentSupplier.category,
-                whatsapp: currentSupplier.whatsapp,
+                name: currentSupplier.name || '',
+                logo: currentSupplier.logo || '',
+                coverImage: currentSupplier.coverImage || '',
+                bio: currentSupplier.bio || '',
+                minOrderValue: currentSupplier.minOrderValue || 0,
+                state: currentSupplier.state || '',
+                category: currentSupplier.category || 'Geral',
+                whatsapp: currentSupplier.whatsapp || '',
+                slug: currentSupplier.slug || '',
               }}
               onSave={handleStorefrontSave}
             />

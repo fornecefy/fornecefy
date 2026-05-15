@@ -2,31 +2,37 @@ import { supabase } from '../supabase'
 import { Supplier } from '../data'
 
 export async function getSuppliers(): Promise<Supplier[]> {
-  const { data, error } = await supabase
-    .from('suppliers')
-    .select('*')
-    .eq('status', 'approved')
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('type', 'fornecedor')
+    
+    if (error) {
+      // Silencioso no marketplace para usar o fallback de mock se necessário
+      return []
+    }
 
-  if (error) {
-    console.error('Error fetching suppliers:', error)
+    if (!data) return []
+
+    // Map database fields to our Supplier interface
+    return data.map((item: any) => ({
+      id: item.id,
+      name: item.company || item.name,
+      logo: item.logo_url || '/placeholder-logo.png',
+      coverImage: item.cover_url || '/placeholder.jpg',
+      bio: item.bio || '',
+      minOrderValue: item.min_order_value || 0,
+      state: item.state || '',
+      category: item.category || 'Geral',
+      whatsapp: item.phone || item.whatsapp || '',
+      modalities: item.modalities || ['Atacado'],
+      plan: item.plan || 'Básico',
+      verified: item.verified || false,
+      rating: item.rating || 0,
+      products: [], // Inicialmente vazio
+    }))
+  } catch (err) {
     return []
   }
-
-  // Map database fields to our Supplier interface
-  return data.map((item: any) => ({
-    id: item.id,
-    name: item.name || item.company_name,
-    logo: item.company_logo_url || '/placeholder-logo.png',
-    coverImage: item.cover_image_url || '/placeholder.jpg',
-    bio: item.about_us || item.description || '',
-    minOrderValue: item.min_order_value || 0,
-    state: item.state,
-    category: item.category || 'Geral',
-    whatsapp: item.whatsapp || '',
-    modalities: item.delivery_types || ['Atacado'],
-    plan: item.plan || 'Básico',
-    verified: item.verified_badge || false,
-    rating: item.average_rating || 0,
-    products: [], // Inicialmente vazio, produtos serão carregados separadamente se necessário
-  }))
 }

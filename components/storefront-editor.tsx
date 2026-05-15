@@ -26,6 +26,7 @@ interface StorefrontData {
   state: string
   category: string
   whatsapp: string
+  slug?: string
 }
 
 interface StorefrontEditorProps {
@@ -75,7 +76,8 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
     setIsSaving(false)
   }
 
-  const formatPhoneInput = (value: string) => {
+  const formatPhoneInput = (value: string | undefined | null) => {
+    if (!value) return ''
     const numbers = value.replace(/\D/g, '')
     if (numbers.length <= 2) return numbers
     if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`
@@ -102,6 +104,14 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
             {showPreview ? 'Editar' : 'Visualizar'}
           </Button>
           <Button
+            onClick={() => window.open(`/fornecedor/${data.slug || initialData.slug || initialData.name}`, '_blank')}
+            variant="outline"
+            className="gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            Visualizar Vitrine
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={isSaving}
             className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -121,7 +131,7 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
         <Card className="bg-card border-border overflow-hidden">
           <div className="relative h-48 md:h-64 bg-muted">
             <Image
-              src={coverPreview || data.coverImage}
+              src={coverPreview || data.coverImage || '/placeholder.jpg'}
               alt="Banner da vitrine"
               fill
               className="object-cover"
@@ -132,7 +142,7 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
             <div className="flex flex-col md:flex-row md:items-end gap-4">
               <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-lg border-4 border-background bg-card overflow-hidden shadow-lg">
                 <Image
-                  src={logoPreview || data.logo}
+                  src={logoPreview || data.logo || '/placeholder-logo.png'}
                   alt="Logo"
                   fill
                   className="object-cover"
@@ -171,7 +181,7 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
             <CardContent>
               <div className="relative h-48 md:h-64 bg-muted rounded-lg overflow-hidden group">
                 <Image
-                  src={coverPreview || data.coverImage}
+                  src={coverPreview || data.coverImage || '/placeholder.jpg'}
                   alt="Banner"
                   fill
                   className="object-cover"
@@ -222,7 +232,7 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
               <div className="flex items-center gap-6">
                 <div className="relative w-32 h-32 rounded-lg bg-muted overflow-hidden group">
                   <Image
-                    src={logoPreview || data.logo}
+                    src={logoPreview || data.logo || '/placeholder-logo.png'}
                     alt="Logo"
                     fill
                     className="object-cover"
@@ -306,6 +316,30 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="slug">URL Personalizada (Slug)</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      fornecefy.com/fornecedor/
+                    </span>
+                    <Input
+                      id="slug"
+                      className="pl-[165px]"
+                      value={data.slug || ''}
+                      onChange={(e) => {
+                        const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                        setData(prev => ({ ...prev, slug: val }))
+                      }}
+                      placeholder="minha-loja"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Use apenas letras minúsculas, números e hífens.
+                </p>
+              </div>
+
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="state">Estado</Label>
@@ -369,7 +403,7 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
                   rows={4}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {data.bio.length}/500 caracteres
+                  {(data.bio || '').length}/500 caracteres
                 </p>
               </div>
             </CardContent>

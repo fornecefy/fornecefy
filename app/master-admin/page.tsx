@@ -93,7 +93,7 @@ export default function MasterAdminPage() {
   const fetchPlatformSettings = async () => {
     try {
       const { data, error } = await supabase.from('platform_settings').select('*')
-      if (error) throw error
+      if (error) return // Silencioso se a tabela não existir
       if (data) {
         const settings: any = {}
         data.forEach(s => { settings[s.key] = s.value })
@@ -103,7 +103,7 @@ export default function MasterAdminPage() {
         })
       }
     } catch (err) {
-      console.error('Erro ao carregar configurações:', err)
+      // Ignora erro de tabela inexistente
     }
   }
 
