@@ -26,7 +26,9 @@ import {
   Upload,
   Image as ImageIcon,
   X,
-  Loader2
+  Loader2,
+  TrendingUp,
+  AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,8 +53,12 @@ import { useEffect, useState as useReactState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SupplierForm } from '@/components/supplier-form'
 import { ProductForm } from '@/components/product-form'
+import { BlogPostForm } from '@/components/blog-post-form'
 
 export default function MasterAdminPage() {
+  const [activeSection, setActiveSection] = useReactState('dashboard')
+  const [subView, setSubView] = useReactState<'list' | 'edit-supplier' | 'new-supplier' | 'edit-product' | 'new-product' | 'edit-blog' | 'new-blog'>('list')
+  const [blogPosts, setBlogPosts] = useReactState<any[]>([])
   const [searchTerm, setSearchTerm] = useReactState('')
   const [productSearchTerm, setProductSearchTerm] = useReactState('')
   const { user, isLoading: isAuthLoading } = useAuth()
@@ -62,9 +68,7 @@ export default function MasterAdminPage() {
   const [products, setProducts] = useReactState<any[]>([])
   const [isLoadingData, setIsLoadingData] = useReactState(true)
 
-  // Modal states
-  const [showSupplierForm, setShowSupplierForm] = useReactState(false)
-  const [showProductForm, setShowProductForm] = useReactState(false)
+  // Modal states (using subView now)
   const [editingId, setEditingId] = useReactState<string | undefined>(undefined)
   const [initialSupplierId, setInitialSupplierId] = useReactState<string | undefined>(undefined)
 
@@ -156,11 +160,19 @@ export default function MasterAdminPage() {
   const fetchAdminData = async () => {
     setIsLoadingData(true)
     try {
-      // Busca Perfis (Fornecedores e Admins)
+      // Busca Fornecedores da tabela dedicada
+      const { data: supplierData, error: supplierError } = await supabase
+        .from('suppliers')
+        .select('*')
+        .order('name', { ascending: true })
+      
+      if (supplierError) throw supplierError
+
+      // Busca Perfis Administrativos
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .in('type', ['fornecedor', 'admin'])
+        .eq('role', 'admin')
       
       if (profileError) throw profileError
 
@@ -172,13 +184,18 @@ export default function MasterAdminPage() {
       
       if (productError) throw productError
 
-      if (profileData) {
-        setSuppliers(profileData.filter(p => p.type === 'fornecedor'))
-        setAdmins(profileData.filter(p => p.type === 'admin'))
-      }
-      if (productData) {
-        setProducts(productData)
-      }
+      // Busca Blog
+      const { data: blogData, error: blogError } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (blogError) throw blogError
+
+      if (supplierData) setSuppliers(supplierData)
+      if (profileData) setAdmins(profileData)
+      if (productData) setProducts(productData)
+      if (blogData) setBlogPosts(blogData)
     } catch (err) {
       console.error('Erro ao buscar dados do painel:', err)
     } finally {
@@ -189,7 +206,7 @@ export default function MasterAdminPage() {
   const handleToggleVerified = async (id: string, currentStatus: boolean) => {
     setSuppliers(prev => prev.map(s => s.id === id ? { ...s, verified: !currentStatus } : s))
     try {
-      const { error } = await supabase.from('profiles').update({ verified: !currentStatus }).eq('id', id)
+      const { error } = await supabase.from('suppliers').update({ verified: !currentStatus }).eq('id', id)
       if (error) throw error
     } catch (err) {
       console.error('Erro ao atualizar fornecedor:', err)
@@ -200,7 +217,7 @@ export default function MasterAdminPage() {
   const handleUpdatePlan = async (id: string, newPlan: string) => {
     setSuppliers(prev => prev.map(s => s.id === id ? { ...s, plan: newPlan } : s))
     try {
-      const { error } = await supabase.from('profiles').update({ plan: newPlan }).eq('id', id)
+      const { error } = await supabase.from('suppliers').update({ plan: newPlan }).eq('id', id)
       if (error) throw error
     } catch (err) {
       console.error('Erro ao atualizar plano:', err)
@@ -211,7 +228,7 @@ export default function MasterAdminPage() {
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     setSuppliers(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s))
     try {
-      const { error } = await supabase.from('profiles').update({ status: newStatus }).eq('id', id)
+      const { error } = await supabase.from('suppliers').update({ status: newStatus }).eq('id', id)
       if (error) throw error
     } catch (err) {
       console.error('Erro ao atualizar status:', err)
@@ -223,7 +240,7 @@ export default function MasterAdminPage() {
     if (!confirm('Tem certeza que deseja excluir este fornecedor? Todos os dados vinculados podem ser perdidos.')) return
     
     try {
-      const { error } = await supabase.from('profiles').delete().eq('id', id)
+      const { error } = await supabase.from('suppliers').delete().eq('id', id)
       if (error) throw error
       setSuppliers(prev => prev.filter(s => s.id !== id))
     } catch (err) {
@@ -256,6 +273,19 @@ export default function MasterAdminPage() {
     }
   }
 
+  const handleDeleteBlogPost = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este artigo?')) return
+    
+    try {
+      const { error } = await supabase.from('blog_posts').delete().eq('id', id)
+      if (error) throw error
+      setBlogPosts(prev => prev.filter(p => p.id !== id))
+    } catch (err) {
+      console.error('Erro ao deletar artigo:', err)
+      alert('Erro ao excluir artigo.')
+    }
+  }
+
   if (isAuthLoading || !isAuthorized) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
@@ -264,619 +294,603 @@ export default function MasterAdminPage() {
     )
   }
 
+  const navItems = [
+    { id: 'dashboard', label: 'Visão Geral', icon: BarChart3 },
+    { id: 'suppliers', label: 'Fornecedores', icon: Building2 },
+    { id: 'products', label: 'Produtos', icon: Package },
+    { id: 'blog', label: 'Blog / Notícias', icon: TrendingUp },
+    { id: 'team', label: 'Equipe Interna', icon: Users },
+    { id: 'technical', label: 'Configurações', icon: Settings },
+  ]
+
   return (
-    <div className="min-h-screen bg-muted/30">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Painel Master Admin</h1>
-            <p className="text-muted-foreground">Gestão global do ecossistema Fornecefy</p>
+    <div className="min-h-screen bg-muted/30 flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-card border-r border-border hidden md:flex flex-col sticky top-0 h-screen">
+        <div className="p-6 border-b">
+          <div className="flex items-center gap-2 font-bold text-xl text-primary">
+            <ShieldCheck className="w-6 h-6" />
+            <span>Master Admin</span>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" onClick={fetchAdminData}>
-              <BarChart3 className="w-4 h-4" />
-              Sincronizar
-            </Button>
-            <Button className="gap-2" onClick={() => {
-              setEditingId(undefined)
-              setShowSupplierForm(true)
-            }}>
-              <Plus className="w-4 h-4" />
-              Novo Fornecedor
-            </Button>
-          </div>
+          <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-widest font-bold">Fornecefy Ecosystem</p>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex bg-card border">
-            <TabsTrigger value="overview" className="gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Visão Geral
-            </TabsTrigger>
-            <TabsTrigger value="suppliers" className="gap-2">
-              <Building2 className="w-4 h-4" />
-              Fornecedores
-            </TabsTrigger>
-            <TabsTrigger value="products" className="gap-2">
-              <Package className="w-4 h-4" />
-              Produtos
-            </TabsTrigger>
-            <TabsTrigger value="team" className="gap-2">
-              <Users className="w-4 h-4" />
-              Equipe Interna
-            </TabsTrigger>
-            <TabsTrigger value="technical" className="gap-2">
-              <Settings className="w-4 h-4" />
-              Configurações Técnicas
-            </TabsTrigger>
-          </TabsList>
+        <nav className="flex-1 p-4 space-y-1">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveSection(item.id)
+                setSubView('list')
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
+                activeSection === item.id
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Fornecedores</CardTitle>
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{suppliers.length}</div>
-                  <p className="text-xs text-muted-foreground">Fornecedores cadastrados no sistema</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Produtos</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{products.length}</div>
-                  <p className="text-xs text-muted-foreground">Produtos ativos no marketplace</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Equipe Interna</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{admins.length}</div>
-                  <p className="text-xs text-muted-foreground">Administradores e suporte</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Selo de Verificação</CardTitle>
-                  <BadgeCheck className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {suppliers.filter(s => s.verified).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Fornecedores verificados</p>
-                </CardContent>
-              </Card>
+        <div className="p-4 border-t space-y-4">
+          <div className="bg-muted/50 rounded-xl p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+                A
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-xs font-bold truncate">{user?.email}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Super Admin</p>
+              </div>
             </div>
+          </div>
+          <Button variant="outline" className="w-full justify-start gap-2" onClick={() => router.push('/')}>
+            <ExternalLink className="w-4 h-4" />
+            Voltar ao Site
+          </Button>
+        </div>
+      </aside>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Atividade Recente</CardTitle>
-                  <CardDescription>Últimas ações realizadas no sistema</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {suppliers.slice(0, 3).map((s, i) => (
-                      <div key={i} className="flex items-center gap-4">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium">Novo fornecedor cadastrado: {s.name}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleDateString('pt-BR')}</p>
-                        </div>
-                      </div>
-                    ))}
-                    {products.slice(0, 2).map((p, i) => (
-                      <div key={i} className="flex items-center gap-4">
-                        <div className="w-2 h-2 rounded-full bg-accent" />
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium">Novo produto adicionado: {p.name}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
-                        </div>
-                      </div>
-                    ))}
-                    {suppliers.length === 0 && products.length === 0 && (
-                      <p className="text-sm text-muted-foreground italic">Nenhuma atividade recente registrada.</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ações Rápidas</CardTitle>
-                  <CardDescription>Atalhos para funções administrativas</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => router.push('/dashboard')}>
-                    <Building2 className="w-5 h-5" />
-                    <span>Gerenciar Minha Loja</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={fetchAdminData}>
-                    <Zap className="w-5 h-5" />
-                    <span>Sincronizar Banco</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex flex-col gap-2">
-                    <ShieldCheck className="w-5 h-5" />
-                    <span>Logs de Segurança</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex flex-col gap-2">
-                    <Target className="w-5 h-5" />
-                    <span>Configurar Pixels</span>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 flex flex-col">
+        <header className="h-16 border-b bg-card/80 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h2 className="font-bold text-lg capitalize">{activeSection.replace('-', ' ')}</h2>
+            {subView !== 'list' && (
+              <>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground capitalize">{subView.replace('-', ' ')}</span>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={fetchAdminData} disabled={isLoadingData}>
+              <Zap className={`w-4 h-4 ${isLoadingData ? 'animate-spin' : ''}`} />
+            </Button>
+            <div className="h-8 w-px bg-border mx-2" />
+            <Button variant="outline" size="sm" onClick={() => router.push('/dashboard')}>
+              Meu Painel
+            </Button>
+          </div>
+        </header>
 
-          <TabsContent value="suppliers" className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle>Gestão de Fornecedores</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar fornecedor..."
-                        className="pl-8 w-[250px]"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
+        <div className="p-8 flex-1 overflow-y-auto">
+          {/* VISÃO GERAL */}
+          {activeSection === 'dashboard' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="border-none shadow-sm bg-gradient-to-br from-primary/5 to-transparent">
+                  <CardHeader className="pb-2">
+                    <CardDescription>Fornecedores</CardDescription>
+                    <CardTitle className="text-3xl font-black">{suppliers.length}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Zap className="w-3 h-3 text-emerald-500" />
+                      Ativos na plataforma
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardDescription>Produtos Ativos</CardDescription>
+                    <CardTitle className="text-3xl font-black">{products.length}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground">Em {suppliers.length} catálogos</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardDescription>Equipe Interna</CardDescription>
+                    <CardTitle className="text-3xl font-black">{admins.length}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground">Controle de acesso total</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm bg-accent/5">
+                  <CardHeader className="pb-2">
+                    <CardDescription>Leads Gerados</CardDescription>
+                    <CardTitle className="text-3xl font-black text-accent">--</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground">Módulo em desenvolvimento</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid lg:grid-cols-3 gap-8">
+                <Card className="lg:col-span-2 border-none shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Novos Fornecedores</CardTitle>
+                    <CardDescription>Últimos cadastros realizados na plataforma</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {suppliers.slice(0, 5).map(s => (
+                        <div key={s.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden border">
+                              {s.logo ? <img src={s.logo} className="w-full h-full object-cover" /> : <Building2 className="w-5 h-5 text-muted-foreground" />}
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm">{s.name}</p>
+                              <p className="text-xs text-muted-foreground">{s.email}</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline">{s.plan}</Badge>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fornecedor</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Selo</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoadingData ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      suppliers
-                        .filter(s => (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (s.email || '').toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map((s) => (
-                        <TableRow key={s.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded bg-muted overflow-hidden flex items-center justify-center font-bold text-xs shrink-0">
-                                {s.logo_url ? (
-                                  <img src={s.logo_url} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  (s.name || s.email || 'F')[0].toUpperCase()
-                                )}
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-medium truncate">{s.name || s.company_name || 'Sem Nome'}</span>
-                                <span className="text-xs text-muted-foreground truncate">{s.email}</span>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <select 
-                              className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer"
-                              value={s.plan || 'Básico'}
-                              onChange={(e) => handleUpdatePlan(s.id, e.target.value)}
-                            >
-                              <option value="Básico">Básico</option>
-                              <option value="Pro">Pro</option>
-                              <option value="Elite">Elite</option>
-                            </select>
-                          </TableCell>
-                          <TableCell>
-                            {s.verified ? (
-                              <BadgeCheck className="w-5 h-5 text-primary cursor-pointer" onClick={() => handleToggleVerified(s.id, s.verified)} />
-                            ) : (
-                              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => handleToggleVerified(s.id, !!s.verified)}>
-                                Ativar
-                              </Button>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <select 
-                              className={`bg-transparent text-xs font-bold focus:outline-none cursor-pointer ${s.status === 'blocked' ? 'text-destructive' : 'text-emerald-600'}`}
-                              value={s.status || 'active'}
-                              onChange={(e) => handleUpdateStatus(s.id, e.target.value)}
-                            >
-                              <option value="active">Ativo</option>
-                              <option value="blocked">Bloqueado</option>
-                            </select>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-primary"
-                                onClick={() => {
-                                  setEditingId(s.id)
-                                  setShowSupplierForm(true)
-                                }}
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteSupplier(s.id)}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="products" className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle>Gestão Global de Produtos</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      size="sm" 
-                      className="gap-2"
-                      onClick={() => {
-                        setEditingId(undefined)
-                        setShowProductForm(true)
-                      }}
-                    >
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Atalhos Rápidos</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button className="w-full justify-start gap-2 h-12 rounded-xl" onClick={() => { setActiveSection('suppliers'); setSubView('new-supplier'); }}>
                       <Plus className="w-4 h-4" />
-                      Novo Produto
+                      Novo Fornecedor
                     </Button>
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar produto ou SKU..."
-                        className="pl-8 w-[250px]"
-                        value={productSearchTerm}
-                        onChange={(e) => setProductSearchTerm(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Produto</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>Preço (Varejo)</TableHead>
-                      <TableHead>Preço (Atacado)</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoadingData ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-                        </TableCell>
-                      </TableRow>
-                    ) : products.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          Nenhum produto cadastrado no sistema.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      products
-                        .filter(p => 
-                          (p.name || '').toLowerCase().includes(productSearchTerm.toLowerCase()) || 
-                          (p.sku || '').toLowerCase().includes(productSearchTerm.toLowerCase())
-                        )
-                        .map((p) => (
-                        <TableRow key={p.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded border bg-muted overflow-hidden flex items-center justify-center shrink-0">
-                                {p.image_url ? (
-                                  <img src={p.image_url} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <Package className="w-5 h-5 text-muted-foreground" />
-                                )}
-                              </div>
-                              <span className="font-medium line-clamp-1">{p.name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs text-muted-foreground">
-                            {p.sku || 'N/A'}
-                          </TableCell>
-                          <TableCell>
-                            {p.retail_price ? `R$ ${p.retail_price.toFixed(2)}` : 'Sob consulta'}
-                          </TableCell>
-                          <TableCell>
-                            {p.wholesale_price ? `R$ ${p.wholesale_price.toFixed(2)}` : '-'}
-                          </TableCell>
-                          <TableCell>
-                            <select 
-                              className={`bg-transparent text-xs font-bold focus:outline-none cursor-pointer ${p.status === 'active' ? 'text-emerald-600' : 'text-muted-foreground'}`}
-                              value={p.status || 'active'}
-                              onChange={(e) => handleUpdateProductStatus(p.id, e.target.value)}
-                            >
-                              <option value="active">Ativo</option>
-                              <option value="inactive">Inativo</option>
-                            </select>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-primary"
-                                onClick={() => {
-                                  setEditingId(p.id)
-                                  setShowProductForm(true)
-                                }}
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProduct(p.id)}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    <Button variant="outline" className="w-full justify-start gap-2 h-12 rounded-xl" onClick={() => { setActiveSection('technical'); }}>
+                      <ImageIcon className="w-4 h-4" />
+                      Alterar Logo
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start gap-2 h-12 rounded-xl" onClick={() => { setActiveSection('products'); }}>
+                      <Search className="w-4 h-4" />
+                      Buscar Produto
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
 
-          <TabsContent value="team" className="space-y-4">
-            <Card>
+           {/* FORNECEDORES */}
+          {activeSection === 'suppliers' && (
+            <div className="space-y-6">
+              {subView === 'list' ? (
+                <Card className="border-none shadow-sm overflow-hidden">
+                  <CardHeader className="border-b bg-muted/20 pb-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <CardTitle>Gestão de Fornecedores</CardTitle>
+                        <CardDescription>Visualize e controle todos os parceiros da plataforma</CardDescription>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Buscar empresa, email..." 
+                            className="pl-9 w-[300px] h-10 rounded-xl"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                        </div>
+                        <Button className="gap-2 rounded-xl h-10 px-6" onClick={() => setSubView('new-supplier')}>
+                          <Plus className="w-4 h-4" />
+                          Novo
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader className="bg-muted/50">
+                        <TableRow>
+                          <TableHead className="w-[300px]">Empresa</TableHead>
+                          <TableHead>Localização</TableHead>
+                          <TableHead>Plano</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {isLoadingData ? (
+                          <TableRow><TableCell colSpan={5} className="h-64 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                        ) : suppliers.length === 0 ? (
+                          <TableRow><TableCell colSpan={5} className="h-64 text-center text-muted-foreground font-medium">Nenhum fornecedor encontrado.</TableCell></TableRow>
+                        ) : (
+                          suppliers
+                            .filter(s => 
+                              (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              (s.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                            )
+                            .map((s) => (
+                            <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
+                              <TableCell>
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded-xl border bg-card flex items-center justify-center overflow-hidden shadow-sm">
+                                    {s.logo ? <img src={s.logo} className="w-full h-full object-cover" /> : <Building2 className="w-6 h-6 text-muted-foreground" />}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-bold text-sm">{s.name}</span>
+                                      {s.verified && <BadgeCheck className="w-4 h-4 text-primary fill-primary/10" />}
+                                    </div>
+                                    <span className="text-[11px] text-muted-foreground">{s.email}</span>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium">{s.city || 'Cidade N/I'}</span>
+                                  <span className="text-[10px] text-muted-foreground uppercase">{s.state || 'UF'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <select 
+                                  className="bg-muted px-2 py-1 rounded-md text-xs font-bold focus:outline-none border-none"
+                                  value={s.plan || 'Básico'}
+                                  onChange={(e) => handleUpdatePlan(s.id, e.target.value)}
+                                >
+                                  <option value="Básico">Básico</option>
+                                  <option value="Pro">Pro</option>
+                                  <option value="Elite">Elite</option>
+                                </select>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={s.status === 'active' ? 'default' : 'destructive'} className="rounded-full text-[10px]">
+                                  {s.status === 'active' ? 'Ativo' : 'Bloqueado'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-9 w-9 rounded-full text-primary hover:bg-primary/10"
+                                    onClick={() => {
+                                      setEditingId(s.id)
+                                      setSubView('edit-supplier')
+                                    }}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-destructive hover:bg-destructive/10" onClick={() => handleDeleteSupplier(s.id)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              ) : (subView === 'edit-supplier' || subView === 'new-supplier') ? (
+                <div className="max-w-4xl mx-auto">
+                  <SupplierForm 
+                    supplierId={subView === 'edit-supplier' ? editingId : undefined}
+                    onClose={() => setSubView('list')}
+                    onSuccess={() => {
+                      fetchAdminData()
+                      setSubView('list')
+                    }}
+                  />
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* PRODUTOS */}
+          {activeSection === 'products' && (
+            <div className="space-y-6">
+              {subView === 'list' ? (
+                <Card className="border-none shadow-sm overflow-hidden">
+                  <CardHeader className="border-b bg-muted/20 pb-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <CardTitle>Gestão de Produtos</CardTitle>
+                        <CardDescription>Produtos listados por todos os fornecedores</CardDescription>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Buscar produto, SKU..." 
+                            className="pl-9 w-[300px] h-10 rounded-xl"
+                            value={productSearchTerm}
+                            onChange={(e) => setProductSearchTerm(e.target.value)}
+                          />
+                        </div>
+                        <Button className="gap-2 rounded-xl h-10 px-6" onClick={() => setSubView('new-product')}>
+                          <Plus className="w-4 h-4" />
+                          Novo
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader className="bg-muted/50">
+                        <TableRow>
+                          <TableHead className="w-[350px]">Produto</TableHead>
+                          <TableHead>Categoria</TableHead>
+                          <TableHead>Preço (Atacado)</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {isLoadingData ? (
+                          <TableRow><TableCell colSpan={5} className="h-64 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                        ) : products.length === 0 ? (
+                          <TableRow><TableCell colSpan={5} className="h-64 text-center text-muted-foreground font-medium">Nenhum produto cadastrado.</TableCell></TableRow>
+                        ) : (
+                          products
+                            .filter(p => 
+                              (p.name || '').toLowerCase().includes(productSearchTerm.toLowerCase()) || 
+                              (p.sku || '').toLowerCase().includes(productSearchTerm.toLowerCase())
+                            )
+                            .map((p) => (
+                            <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
+                              <TableCell>
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded-xl border bg-card flex items-center justify-center overflow-hidden shadow-sm shrink-0">
+                                    {p.image_url ? <img src={p.image_url} className="w-full h-full object-contain" /> : <Package className="w-6 h-6 text-muted-foreground" />}
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-bold text-sm truncate">{p.name}</span>
+                                    <span className="text-[10px] text-muted-foreground font-mono">SKU: {p.sku || '---'}</span>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <Badge variant="secondary" className="text-[10px] w-fit">{p.category}</Badge>
+                                  <span className="text-[9px] text-muted-foreground mt-1">{p.subcategory || 'Sem subcat.'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-bold text-sm">
+                                R$ {p.wholesale_price?.toFixed(2) || '0.00'}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={p.status === 'active' ? 'outline' : 'secondary'} className={p.status === 'active' ? 'border-emerald-500 text-emerald-600' : ''}>
+                                  {p.status === 'active' ? 'Ativo' : 'Inativo'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-9 w-9 rounded-full text-primary hover:bg-primary/10"
+                                    onClick={() => {
+                                      setEditingId(p.id)
+                                      setSubView('edit-product')
+                                    }}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-destructive hover:bg-destructive/10" onClick={() => handleDeleteProduct(p.id)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              ) : (subView === 'edit-product' || subView === 'new-product') ? (
+                <div className="max-w-4xl mx-auto">
+                  <ProductForm 
+                    productId={subView === 'edit-product' ? editingId : undefined}
+                    onClose={() => setSubView('list')}
+                    onSuccess={() => {
+                      fetchAdminData()
+                      setSubView('list')
+                    }}
+                  />
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* EQUIPE */}
+          {activeSection === 'team' && (
+            <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle>Equipe Interna</CardTitle>
-                <CardDescription>Gerencie administradores, suporte e vendas</CardDescription>
+                <CardDescription>Usuários com acesso administrativo ao sistema</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Membro</TableHead>
-                      <TableHead>Cargo</TableHead>
-                      <TableHead>Acesso</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {admins.map((admin) => (
-                      <TableRow key={admin.id}>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{admin.name || 'Admin'}</span>
-                            <span className="text-xs text-muted-foreground">{admin.email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className="bg-primary">Proprietário</Badge>
-                        </TableCell>
-                        <TableCell>Total</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="icon">
-                            <Settings className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {admins.map(admin => (
+                    <div key={admin.id} className="flex items-center justify-between p-4 rounded-2xl border bg-card hover:border-primary/50 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black">
+                          {admin.email?.[0]?.toUpperCase() || 'A'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm">{admin.name || 'Administrador'}</p>
+                          <p className="text-xs text-muted-foreground">{admin.email}</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-primary text-primary-foreground">Super Admin</Badge>
+                    </div>
+                  ))}
+                  <button className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-muted-foreground/10 hover:border-primary/40 hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary gap-2">
+                    <Plus className="w-6 h-6" />
+                    <span className="text-sm font-bold">Adicionar Membro</span>
+                  </button>
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="technical" className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-primary" />
-                    <CardTitle>Pixels & Marketing</CardTitle>
-                  </div>
-                  <CardDescription>Configure rastreamento global ou por fornecedor</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Pixel do Facebook Global</Label>
-                      <p className="text-xs text-muted-foreground">Ativa o rastreamento em toda a plataforma</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Google Analytics 4</Label>
-                      <p className="text-xs text-muted-foreground">Monitoramento de tráfego avançado</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                </CardContent>
-              </Card>
+          {/* BLOG */}
+          {activeSection === 'blog' && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-2xl border shadow-sm">
+                <div>
+                  <h3 className="text-xl font-bold">Postagens do Blog</h3>
+                  <p className="text-sm text-muted-foreground">Gerencie o conteúdo educativo e notícias da plataforma</p>
+                </div>
+                <Button className="rounded-xl gap-2 font-bold h-12 px-6" onClick={() => { setSubView('new-blog'); setEditingId(undefined) }}>
+                  <Plus className="w-5 h-5" />
+                  Novo Artigo
+                </Button>
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-primary" />
-                    <CardTitle>Módulos de Pagamento</CardTitle>
-                  </div>
-                  <CardDescription>Controle de ferramentas de faturamento</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>PIX Copia e Cola</Label>
-                      <p className="text-xs text-muted-foreground">Habilitar módulo de pagamento instantâneo</p>
-                    </div>
-                    <Switch />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Link de Pagamento (Checkout)</Label>
-                      <p className="text-xs text-muted-foreground">Permitir fechamento direto no site</p>
-                    </div>
-                    <Switch />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5 text-primary" />
-                    <CardTitle>Branding & Identidade</CardTitle>
-                  </div>
-                  <CardDescription>Configure os logotipos oficiais da plataforma</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      <Label>Logo do Cabeçalho (Header)</Label>
-                      <div className="flex flex-col gap-4">
-                        <div className="h-20 w-full rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/50 overflow-hidden">
-                          {platformSettings.header_logo_url ? (
-                            <img src={platformSettings.header_logo_url} alt="Header Logo" className="h-12 w-auto object-contain" />
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Usando texto (padrão)</span>
-                          )}
+              {subView === 'list' ? (
+                <div className="grid gap-4">
+                  {blogPosts.map((post) => (
+                    <Card key={post.id} className="border-none shadow-sm overflow-hidden group hover:bg-muted/5 transition-colors">
+                      <div className="flex items-center gap-6 p-4">
+                        <div className="w-24 h-16 rounded-lg bg-muted overflow-hidden border flex-shrink-0">
+                          {post.cover_image ? <img src={post.cover_image} className="w-full h-full object-cover" /> : <ImageIcon className="w-6 h-6 text-muted-foreground m-auto" />}
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1 relative">
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload Header Logo
-                            <input 
-                              type="file" 
-                              className="absolute inset-0 opacity-0 cursor-pointer" 
-                              accept="image/*"
-                              onChange={(e) => handleUploadBranding(e, 'header_logo_url')}
-                            />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold truncate">{post.title}</h4>
+                            <Badge variant={post.status === 'published' ? 'default' : 'secondary'} className="text-[10px] uppercase font-black">
+                              {post.status === 'published' ? 'Publicado' : 'Rascunho'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
+                            <span>{post.category}</span>
+                            <span className="w-1 h-1 rounded-full bg-border" />
+                            <span>{new Date(post.created_at).toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => { setEditingId(post.id); setSubView('edit-blog') }}>
+                            <Pencil className="w-4 h-4" />
                           </Button>
-                          {platformSettings.header_logo_url && (
-                            <Button variant="ghost" size="sm" onClick={() => setPlatformSettings({...platformSettings, header_logo_url: ''})}>
-                              <X className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteBlogPost(post.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
+                    </Card>
+                  ))}
+                  {blogPosts.length === 0 && (
+                    <div className="text-center py-20 bg-card rounded-2xl border border-dashed border-border/60">
+                      <TrendingUp className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                      <p className="text-muted-foreground font-medium">Nenhum artigo publicado ainda.</p>
+                      <Button variant="outline" className="mt-4 rounded-xl" onClick={() => setSubView('new-blog')}>Começar agora</Button>
                     </div>
+                  )}
+                </div>
+              ) : (
+                <BlogPostForm 
+                  postId={editingId} 
+                  onClose={() => { setSubView('list'); setEditingId(undefined) }}
+                  onSuccess={() => { fetchAdminData(); setSubView('list'); setEditingId(undefined) }}
+                />
+              )}
+            </div>
+          )}
 
-                    <div className="space-y-4">
-                      <Label>Logo do Rodapé (Footer)</Label>
-                      <div className="flex flex-col gap-4">
-                        <div className="h-20 w-full rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/50 overflow-hidden">
-                          {platformSettings.footer_logo_url ? (
-                            <img src={platformSettings.footer_logo_url} alt="Footer Logo" className="h-12 w-auto object-contain" />
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Usando texto (padrão)</span>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1 relative">
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload Footer Logo
-                            <input 
-                              type="file" 
-                              className="absolute inset-0 opacity-0 cursor-pointer" 
-                              accept="image/*"
-                              onChange={(e) => handleUploadBranding(e, 'footer_logo_url')}
-                            />
-                          </Button>
-                          {platformSettings.footer_logo_url && (
-                            <Button variant="ghost" size="sm" onClick={() => setPlatformSettings({...platformSettings, footer_logo_url: ''})}>
-                              <X className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+          {/* CONFIGURAÇÕES */}
+          {activeSection === 'technical' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="border-none shadow-sm h-fit">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    <CardTitle>Identidade Visual</CardTitle>
+                  </div>
+                  <CardDescription>Configure os logotipos oficiais da Fornecefy</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  <div className="space-y-4">
+                    <Label className="text-sm font-bold">Logo do Cabeçalho (Light/Dark)</Label>
+                    <div className="relative h-24 w-full rounded-2xl border-2 border-dashed border-muted-foreground/10 bg-muted/30 flex items-center justify-center overflow-hidden group">
+                      {platformSettings.header_logo_url ? (
+                        <img src={platformSettings.header_logo_url} className="h-12 w-auto object-contain" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground font-medium italic">Nenhum logotipo enviado</span>
+                      )}
+                      <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e) => handleUploadBranding(e, 'header_logo_url')} />
                     </div>
                   </div>
-                  <div className="mt-8 flex justify-end">
-                    <Button onClick={savePlatformSettings} disabled={isSavingSettings} className="gap-2">
-                      {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                      Salvar Identidade Visual
-                    </Button>
+
+                  <div className="space-y-4">
+                    <Label className="text-sm font-bold">Logo do Rodapé</Label>
+                    <div className="relative h-24 w-full rounded-2xl border-2 border-dashed border-muted-foreground/10 bg-muted/30 flex items-center justify-center overflow-hidden group">
+                      {platformSettings.footer_logo_url ? (
+                        <img src={platformSettings.footer_logo_url} className="h-12 w-auto object-contain" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground font-medium italic">Nenhum logotipo enviado</span>
+                      )}
+                      <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={(e) => handleUploadBranding(e, 'footer_logo_url')} />
+                    </div>
                   </div>
+
+                  <Button onClick={savePlatformSettings} disabled={isSavingSettings} className="w-full h-12 rounded-xl gap-2 font-bold">
+                    {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    Salvar Alterações
+                  </Button>
                 </CardContent>
               </Card>
 
-              <Card className="md:col-span-2">
+              <Card className="border-none shadow-sm h-fit">
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <Zap className="w-5 h-5 text-primary" />
-                    <CardTitle>Recursos Experimentais</CardTitle>
+                    <CardTitle>Recursos da Plataforma</CardTitle>
                   </div>
+                  <CardDescription>Controle de módulos e acesso global</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div className="flex items-center justify-between border p-4 rounded-lg">
-                      <Label>Modo Manutenção</Label>
-                      <Switch />
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/10">
+                    <div className="space-y-0.5">
+                      <Label className="font-bold">Modo Manutenção</Label>
+                      <p className="text-xs text-muted-foreground">Bloqueia acesso público ao site</p>
                     </div>
-                    <div className="flex items-center justify-between border p-4 rounded-lg">
-                      <Label>Novas Modalidades</Label>
-                      <Switch defaultChecked />
+                    <Switch />
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/10">
+                    <div className="space-y-0.5">
+                      <Label className="font-bold">Novos Cadastros</Label>
+                      <p className="text-xs text-muted-foreground">Permite que novos fornecedores se registrem</p>
                     </div>
-                    <div className="flex items-center justify-between border p-4 rounded-lg">
-                      <Label>Filtros AI</Label>
-                      <Switch />
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/10">
+                    <div className="space-y-0.5">
+                      <Label className="font-bold">Filtros Avançados AI</Label>
+                      <p className="text-xs text-muted-foreground">Ativa busca inteligente no marketplace</p>
                     </div>
+                    <Switch />
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </main>
-
-      {/* Modais de Edição e Cadastro */}
-      {showSupplierForm && (
-        <SupplierForm 
-          supplierId={editingId}
-          onClose={() => setShowSupplierForm(false)}
-          onSuccess={() => {
-            fetchAdminData()
-          }}
-        />
-      )}
-
-      {showProductForm && (
-        <ProductForm 
-          productId={editingId}
-          initialSupplierId={initialSupplierId}
-          onClose={() => setShowProductForm(false)}
-          onSuccess={() => {
-            fetchAdminData()
-          }}
-        />
-      )}
     </div>
   )
 }

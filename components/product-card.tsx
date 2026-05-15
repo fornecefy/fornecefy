@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { BadgeCheck, Truck, Heart } from 'lucide-react'
+import { BadgeCheck, Truck, Heart, Store } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,9 +15,10 @@ import { useFavorites } from '@/lib/favorites-context'
 interface ProductCardProps {
   product: Product
   variant?: 'default' | 'compact'
+  showActions?: boolean
 }
 
-export function ProductCard({ product, variant = 'default' }: ProductCardProps) {
+export function ProductCard({ product, variant = 'default', showActions = true }: ProductCardProps) {
   const { addItem } = useCart()
   const { isFavoriteProduct, toggleFavoriteProduct } = useFavorites()
   const { user } = useAuth()
@@ -68,79 +69,90 @@ export function ProductCard({ product, variant = 'default' }: ProductCardProps) 
 
   return (
     <Link href={`/produto/${product.id}`}>
-      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 bg-card border-border h-full flex flex-col">
-        <div className="relative aspect-square overflow-hidden bg-muted">
+      <Card className="group overflow-hidden hover:shadow-xl transition-all duration-500 bg-card border-border/60 hover:border-primary/30 h-full flex flex-col rounded-2xl">
+        <div className="relative aspect-square overflow-hidden bg-muted/50">
           <Image
             src={product.image}
             alt={product.name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-cover group-hover:scale-110 transition-transform duration-700"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          
           {product.readyToShip && (
-            <Badge className="absolute top-2 left-2 bg-emerald-500 text-white border-0 gap-1">
-              <Truck className="w-3 h-3" />
+            <Badge className="absolute top-3 left-3 bg-primary text-white border-0 gap-1.5 shadow-lg backdrop-blur-md">
+              <Truck className="w-3.5 h-3.5" />
               Pronta Entrega
             </Badge>
           )}
           <Button
             size="icon"
             variant="secondary"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-10px] group-hover:translate-y-0"
             onClick={handleToggleFavorite}
           >
-            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+            <Heart className={`w-4.5 h-4.5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
           </Button>
         </div>
-        <CardContent className="p-3 flex-1 flex flex-col">
-          {/* Modality Tags */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            {product.modalities.map((mod) => (
-              <Badge key={mod} variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-muted text-muted-foreground font-normal border-0">
-                {mod}
-              </Badge>
-            ))}
+        
+        <CardContent className="p-4 flex-1 flex flex-col">
+          {/* Category Tag */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-primary/70 bg-primary/5 px-2 py-0.5 rounded-full">
+              {product.modalities[0]}
+            </span>
           </div>
 
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+            <h3 className="text-base font-semibold text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors leading-tight">
               {product.name}
             </h3>
             
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[11px] text-muted-foreground truncate">{product.supplierName}</span>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
+                <Store className="w-3 h-3 text-muted-foreground" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground truncate">{product.supplierName}</span>
               {product.supplierVerified && (
-                <BadgeCheck className="w-3 h-3 text-primary flex-shrink-0" />
+                <BadgeCheck className="w-3.5 h-3.5 text-primary flex-shrink-0" />
               )}
             </div>
           </div>
 
-          <div className="mt-auto space-y-2">
+          <div className="mt-auto pt-4 border-t border-border/50 space-y-3">
             {isLoggedIn ? (
-              <div>
-                <p className="text-lg font-bold text-foreground">
-                  {formatCurrency(product.wholesalePrice)}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Pedido mín. {product.minQuantity} un.
-                </p>
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Preço no Atacado</p>
+                  <p className="text-xl font-bold text-foreground">
+                    {formatCurrency(product.wholesalePrice)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-primary/80">
+                    Mín. {product.minQuantity} un.
+                  </p>
+                </div>
               </div>
             ) : (
-              <div className="bg-muted/50 rounded-md p-2 text-center">
-                <p className="text-[11px] font-medium text-muted-foreground">
-                  Faça login para ver preços
+              <div className="bg-primary/5 rounded-xl p-3 text-center border border-primary/10">
+                <p className="text-xs font-bold text-primary">
+                  Login para ver preços
                 </p>
               </div>
             )}
 
-            <Button
-              size="sm"
-              variant={isLoggedIn ? "default" : "outline"}
-              className="w-full h-8 text-xs"
-              onClick={handleAddToCart}
-              disabled={!isLoggedIn}
-            >
-              {isLoggedIn ? "Adicionar ao Orçamento" : "Login para comprar"}
-            </Button>
+            {showActions && (
+              <Button
+                size="sm"
+                variant={isLoggedIn ? "default" : "outline"}
+                className="w-full h-10 text-sm font-bold rounded-xl shadow-sm group-hover:shadow-md transition-all active:scale-[0.98]"
+                onClick={handleAddToCart}
+                disabled={!isLoggedIn}
+              >
+                {isLoggedIn ? "Solicitar Orçamento" : "Criar Conta Grátis"}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

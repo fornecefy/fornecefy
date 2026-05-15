@@ -5,9 +5,8 @@ export async function getSuppliers(): Promise<Supplier[]> {
   try {
     console.log('SupplierService: Buscando fornecedores...')
     const { data, error } = await supabase
-      .from('profiles')
+      .from('suppliers')
       .select('*')
-      .eq('type', 'fornecedor')
     
     if (error) {
       console.error('SupplierService: Erro ao buscar fornecedores:', error.message)
@@ -21,14 +20,15 @@ export async function getSuppliers(): Promise<Supplier[]> {
     // Map database fields to our Supplier interface
     return data.map((item: any) => ({
       id: item.id,
-      name: item.company || item.name,
-      logo: item.logo_url || '/placeholder-logo.png',
-      coverImage: item.cover_url || '/placeholder.jpg',
-      bio: item.bio || '',
+      name: item.name,
+      slug: item.slug,
+      logo: item.logo || '/placeholder-logo.png',
+      coverImage: item.cover_image || '/placeholder.jpg',
+      bio: item.description || '',
       minOrderValue: item.min_order_value || 0,
       state: item.state || '',
       category: item.category || 'Geral',
-      whatsapp: item.phone || item.whatsapp || '',
+      whatsapp: item.whatsapp || '',
       modalities: item.modalities || ['Atacado'],
       plan: item.plan || 'Básico',
       verified: item.verified || false,

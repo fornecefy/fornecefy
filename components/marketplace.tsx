@@ -54,17 +54,14 @@ export function Marketplace() {
           id: p.id,
           name: p.name,
           description: p.description,
-          price: p.price,
-          originalPrice: p.original_price,
-          minOrderQuantity: p.min_order_quantity,
-          category: p.category || 'Geral',
-          images: p.images || [],
+          wholesalePrice: p.wholesale_price || p.price || 0,
+          image: p.image_url || p.image || '/placeholder-product.jpg',
+          minQuantity: p.min_quantity || 1,
+          category: p.category || p.categoria || 'Geral',
           supplierId: p.supplier_id,
           supplierName: p.supplier_name || 'Fornecedor',
           readyToShip: p.ready_to_ship || false,
-          rating: p.rating || 0,
-          reviews: p.reviews || 0,
-          discount: p.discount || 0,
+          verified: p.supplier_verified || false,
         }))
         setRealProducts(formattedProds)
       }
@@ -167,7 +164,7 @@ export function Marketplace() {
       <CategoryBar selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
 
       <div className="container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-8">
-        <FiltersSidebar filters={filters} onFiltersChange={setFilters} />
+        {isSearching && <FiltersSidebar filters={filters} onFiltersChange={setFilters} />}
         
         <main className="flex-1">
         {isSearching ? (
@@ -220,7 +217,7 @@ export function Marketplace() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard key={product.id} product={product} showActions={isSearching} />
                   ))}
                 </div>
               </section>
@@ -283,7 +280,7 @@ export function Marketplace() {
                   .filter((p) => p.readyToShip)
                   .slice(0, 10)
                   .map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard key={product.id} product={product} showActions={isSearching} />
                   ))}
               </div>
             </section>
@@ -302,7 +299,7 @@ export function Marketplace() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard key={product.id} product={product} showActions={isSearching} />
                 ))}
               </div>
             </section>

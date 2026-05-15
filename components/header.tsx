@@ -40,9 +40,9 @@ export function Header() {
   const favoritesCount = getFavoriteProductsCount()
 
   return (
-    <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 shadow-sm transition-all duration-300">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             {headerLogo ? (
@@ -58,7 +58,12 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1 mr-2">
+            <Link href="/blog">
+              <Button variant="ghost" className="text-sm font-medium">
+                Blog
+              </Button>
+            </Link>
             <Link href="/favoritos">
               <Button variant="ghost" size="icon" className="relative">
                 <Heart className="h-4 w-4" />
@@ -232,6 +237,13 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Cadastrar-se
+                  </Link>
+                  <Link
+                    href="/blog"
+                    className="py-2 text-foreground hover:text-primary font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Blog
                   </Link>
                 </>
               )}

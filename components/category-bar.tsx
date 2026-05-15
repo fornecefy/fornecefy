@@ -42,15 +42,15 @@ const categories = [
 
 export function CategoryBar({ selectedCategory, onSelectCategory }: CategoryBarProps) {
   return (
-    <div className="bg-card border-b border-border">
+    <div className="bg-background border-b border-border/40 sticky top-16 z-40 backdrop-blur-md bg-background/90">
       <div className="container mx-auto px-4">
         <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex gap-1 py-3">
+          <div className="flex gap-2 py-4">
             <Button
-              variant={selectedCategory === null ? "default" : "ghost"}
+              variant={selectedCategory === null ? "default" : "secondary"}
               size="sm"
               onClick={() => onSelectCategory(null)}
-              className="flex-shrink-0 gap-2"
+              className={`flex-shrink-0 gap-2 rounded-full px-5 transition-all duration-300 ${selectedCategory === null ? 'shadow-md scale-105' : 'hover:bg-muted'}`}
             >
               <ShoppingBag className="w-4 h-4" />
               Todos
@@ -58,12 +58,14 @@ export function CategoryBar({ selectedCategory, onSelectCategory }: CategoryBarP
             {categories.map((category) => (
               <Button
                 key={category}
-                variant={selectedCategory === category ? "default" : "ghost"}
+                variant={selectedCategory === category ? "default" : "secondary"}
                 size="sm"
                 onClick={() => onSelectCategory(category)}
-                className="flex-shrink-0 gap-2"
+                className={`flex-shrink-0 gap-2 rounded-full px-5 transition-all duration-300 ${selectedCategory === category ? 'shadow-md scale-105' : 'hover:bg-muted'}`}
               >
-                {categoryIcons[category]}
+                <div className={`${selectedCategory === category ? 'text-primary-foreground' : 'text-primary'}`}>
+                  {categoryIcons[category]}
+                </div>
                 {category}
               </Button>
             ))}

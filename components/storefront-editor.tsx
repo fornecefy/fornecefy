@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { categories, states, formatCurrency } from '@/lib/data'
+import { CATEGORIES, BRAZIL_STATES } from '@/lib/constants'
+import { formatCurrency } from '@/lib/data'
 
 interface StorefrontData {
   name: string
@@ -383,9 +384,9 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {states.map((state) => (
-                        <SelectItem key={state} value={state}>
-                          {state}
+                      {BRAZIL_STATES.map((state) => (
+                        <SelectItem key={state.value} value={state.label}>
+                          {state.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -401,9 +402,9 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.name} value={cat.name}>
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

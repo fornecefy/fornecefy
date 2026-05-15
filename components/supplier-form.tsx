@@ -12,13 +12,17 @@ import {
   Phone,
   FileText,
   Globe,
-  MapPin
+  MapPin,
+  ArrowLeft,
+  BadgeCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase'
+
+import { BRAZIL_STATES } from '@/lib/constants'
 
 interface SupplierFormProps {
   supplierId?: string
@@ -35,14 +39,15 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    company: '',
-    phone: '',
-    cnpj: '',
+    trade_name: '',
+    whatsapp: '',
     state: '',
+    city: '',
     plan: 'Básico',
     status: 'active',
-    logo_url: '',
-    verified: false
+    logo: '',
+    verified: false,
+    description: ''
   })
 
   useEffect(() => {
@@ -55,7 +60,7 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
     setIsFetching(true)
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('suppliers')
         .select('*')
         .eq('id', supplierId)
         .single()
@@ -65,14 +70,15 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
         setFormData({
           name: data.name || '',
           email: data.email || '',
-          company: data.company || '',
-          phone: data.phone || '',
-          cnpj: data.cnpj || '',
+          trade_name: data.trade_name || '',
+          whatsapp: data.whatsapp || '',
           state: data.state || '',
+          city: data.city || '',
           plan: data.plan || 'Básico',
           status: data.status || 'active',
-          logo_url: data.logo_url || '',
-          verified: data.verified || false
+          logo: data.logo || '',
+          verified: data.verified || false,
+          description: data.description || ''
         })
       }
     } catch (err: any) {
@@ -100,7 +106,7 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
       const data = await res.json()
 
       if (data.url) {
-        setFormData(prev => ({ ...prev, logo_url: data.url }))
+        setFormData(prev => ({ ...prev, logo: data.url }))
       } else {
         setError(data.error || 'Erro no upload')
       }
@@ -118,28 +124,24 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
 
     try {
       if (supplierId) {
-        // Update
         const { error: dbError } = await supabase
-          .from('profiles')
+          .from('suppliers')
           .update({
             name: formData.name,
-            company: formData.company,
-            phone: formData.phone,
-            cnpj: formData.cnpj,
+            trade_name: formData.trade_name,
+            whatsapp: formData.whatsapp,
             state: formData.state,
+            city: formData.city,
             plan: formData.plan,
             status: formData.status,
-            logo_url: formData.logo_url,
-            verified: formData.verified
+            logo: formData.logo,
+            verified: formData.verified,
+            description: formData.description
           })
           .eq('id', supplierId)
         
         if (dbError) throw dbError
       } else {
-        // Create is more complex because it needs Auth creation. 
-        // For admin, we might want to just create the profile if user exists, 
-        // but usually we want to invite them. 
-        // For now, let's focus on EDITING since the user asked for that.
         setError('A criação de novos fornecedores deve ser feita via página de cadastro por segurança.')
         setIsLoading(false)
         return
@@ -154,102 +156,117 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
     }
   }
 
+  if (isFetching) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    )
+  }
+
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-card border border-border w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
-        <div className="sticky top-0 bg-card/80 backdrop-blur-md border-b p-4 flex items-center justify-between z-10">
-          <h2 className="text-xl font-bold">{supplierId ? 'Editar Fornecedor' : 'Cadastrar Fornecedor'}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </Button>
+    <div className="w-full bg-card border border-border rounded-2xl shadow-sm overflow-hidden animate-in fade-in duration-300">
+      <div className="bg-muted/30 border-b p-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">{supplierId ? 'Editar Fornecedor' : 'Cadastrar Fornecedor'}</h2>
+          <p className="text-sm text-muted-foreground">Gerencie as informações principais do fornecedor</p>
         </div>
+        <Button variant="outline" onClick={onClose} className="gap-2">
+          <ArrowLeft className="w-4 h-4" />
+          Voltar para Lista
+        </Button>
+      </div>
 
-        {isFetching ? (
-          <div className="p-12 flex flex-col items-center justify-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Carregando dados...</p>
+      <form onSubmit={handleSubmit} className="p-8 space-y-10">
+        {error && (
+          <div className="bg-destructive/10 text-destructive text-sm p-4 rounded-xl flex items-center gap-3">
+            <AlertCircle className="w-5 h-5" />
+            {error}
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {error && (
-              <div className="bg-destructive/10 text-destructive text-sm p-4 rounded-xl flex items-center gap-3">
-                <AlertCircle className="w-5 h-5" />
-                {error}
-              </div>
-            )}
+        )}
 
-            <div className="flex flex-col items-center gap-4 py-4">
-              <div className="relative w-24 h-24 rounded-2xl border-2 border-dashed border-muted-foreground/20 flex items-center justify-center overflow-hidden bg-muted hover:border-primary/50 transition-all cursor-pointer">
-                {formData.logo_url ? (
-                  <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <Building2 className="w-8 h-8 text-muted-foreground" />
-                )}
-                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleUpload} />
-                {uploadingLogo && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-white" />
-                  </div>
-                )}
+        <div className="grid lg:grid-cols-3 gap-12">
+          {/* Logo Section */}
+          <div className="flex flex-col items-center gap-4">
+            <Label className="text-base font-bold">Logotipo da Empresa</Label>
+            <div className="relative w-48 h-48 rounded-2xl border-4 border-dashed border-muted-foreground/10 flex items-center justify-center overflow-hidden bg-muted hover:border-primary/40 transition-all cursor-pointer group">
+              {formData.logo_url ? (
+                <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <Building2 className="w-12 h-12 text-muted-foreground" />
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
+                CLIQUE PARA ALTERAR
               </div>
-              <p className="text-xs text-muted-foreground">Logotipo da Empresa</p>
+              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleUpload} />
+              {uploadingLogo && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-white" />
+                </div>
+              )}
             </div>
+            <p className="text-xs text-muted-foreground">Recomendado: 400x400px (PNG ou JPG)</p>
+          </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome do Responsável</Label>
+          {/* Info Section */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="name" className="text-base font-bold">Nome do Responsável</Label>
                 <div className="relative">
-                  <Input id="name" className="pl-9" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input id="name" className="pl-10 h-12" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                  <Mail className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="company">Nome da Empresa</Label>
+              <div className="space-y-3">
+                <Label htmlFor="company" className="text-base font-bold">Nome da Empresa</Label>
                 <div className="relative">
-                  <Input id="company" className="pl-9" value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} required />
-                  <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cnpj">CNPJ</Label>
-                <div className="relative">
-                  <Input id="cnpj" className="pl-9" value={formData.cnpj} onChange={e => setFormData({...formData, cnpj: e.target.value})} />
-                  <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone / WhatsApp</Label>
-                <div className="relative">
-                  <Input id="phone" className="pl-9" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input id="company" className="pl-10 h-12" value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} required />
+                  <Building2 className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
                 </div>
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Estado</Label>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="cnpj" className="text-base font-bold">CNPJ</Label>
+                <div className="relative">
+                  <Input id="cnpj" className="pl-10 h-12" value={formData.cnpj} onChange={e => setFormData({...formData, cnpj: e.target.value})} />
+                  <FileText className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="text-base font-bold">Telefone / WhatsApp</Label>
+                <div className="relative">
+                  <Input id="phone" className="pl-10 h-12" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                  <Phone className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="space-y-3">
+                <Label className="text-base font-bold">Estado</Label>
                 <Select value={formData.state} onValueChange={v => setFormData({...formData, state: v})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o estado" />
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SP">São Paulo</SelectItem>
-                    <SelectItem value="RJ">Rio de Janeiro</SelectItem>
-                    <SelectItem value="MG">Minas Gerais</SelectItem>
-                    <SelectItem value="PR">Paraná</SelectItem>
-                    {/* ... Adicionar outros depois ... */}
+                    {BRAZIL_STATES.map(state => (
+                      <SelectItem key={state.value} value={state.value}>{state.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Plano</Label>
+              <div className="space-y-3">
+                <Label htmlFor="city" className="text-base font-bold">Cidade</Label>
+                <Input id="city" className="h-12" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} placeholder="Digite a cidade" />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-base font-bold">Plano Atual</Label>
                 <Select value={formData.plan} onValueChange={v => setFormData({...formData, plan: v})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o plano" />
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Básico">Básico</SelectItem>
@@ -260,27 +277,35 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
               </div>
             </div>
 
-            <div className="flex items-center gap-2 p-4 bg-primary/5 rounded-xl border border-primary/10">
-              <input 
-                type="checkbox" 
-                id="verified" 
-                className="w-4 h-4 accent-primary" 
-                checked={formData.verified} 
-                onChange={e => setFormData({...formData, verified: e.target.checked})}
-              />
-              <Label htmlFor="verified" className="cursor-pointer font-medium text-primary">Fornecedor Verificado (Selo Blue)</Label>
+            <div className="flex items-center gap-3 p-6 bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20">
+              <div className="flex items-center h-5">
+                <input 
+                  type="checkbox" 
+                  id="verified" 
+                  className="w-6 h-6 rounded border-gray-300 text-primary focus:ring-primary accent-primary cursor-pointer" 
+                  checked={formData.verified} 
+                  onChange={e => setFormData({...formData, verified: e.target.checked})}
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <Label htmlFor="verified" className="cursor-pointer font-bold text-lg text-primary flex items-center gap-2">
+                  <BadgeCheck className="w-6 h-6" />
+                  Fornecedor Verificado (Selo Blue)
+                </Label>
+                <p className="text-muted-foreground">Exibe o selo de confiança e prioriza o fornecedor nas buscas.</p>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-              <Button type="submit" disabled={isLoading} className="gap-2 px-8">
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                Salvar Alterações
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
+        <div className="flex justify-end gap-4 pt-8 border-t-2">
+          <Button type="button" variant="ghost" size="lg" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" size="lg" disabled={isLoading} className="gap-2 px-12 h-14 text-lg">
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+            Salvar Alterações
+          </Button>
+        </div>
+      </form>
     </div>
   )
 }

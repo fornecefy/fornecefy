@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth, UserType } from '@/lib/auth-context'
-import { states } from '@/lib/data'
+import { BRAZIL_STATES } from '@/lib/constants'
 
 import { Suspense } from 'react'
 
@@ -256,8 +256,8 @@ function CadastroContent() {
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {states.map(state => (
-                          <SelectItem key={state} value={state}>{state}</SelectItem>
+                        {BRAZIL_STATES.map(state => (
+                          <SelectItem key={state.value} value={state.label}>{state.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

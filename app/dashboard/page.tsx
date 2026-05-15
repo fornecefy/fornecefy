@@ -19,6 +19,7 @@ import {
   Store,
   ExternalLink,
   BadgeCheck,
+  Pencil
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -42,7 +43,7 @@ const navItems = [
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState('vitrine')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [isAddingProduct, setIsAddingProduct] = useState(false)
+  const [editingProductId, setEditingProductId] = useState<string | null | 'new'>(null)
   const { user, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
 
@@ -366,79 +367,93 @@ export default function DashboardPage() {
           )}
 
           {activeSection === 'produtos' && (
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Meus Produtos</CardTitle>
-                    <CardDescription>
-                      Gerencie os produtos da sua vitrine
-                    </CardDescription>
-                  </div>
-                   <Button 
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                    onClick={() => setIsAddingProduct(true)}
-                  >
-                    Adicionar Produto
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                          Produto
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                          Preco
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                          Modalidades
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {supplierProducts.map((product) => (
-                        <tr key={product.id} className="border-b border-border last:border-0">
-                          <td className="py-3 px-4">
-                            <span className="font-medium text-foreground block">
-                              {product.name}
-                            </span>
-                            {product.sku && <span className="text-[10px] text-muted-foreground">SKU: {product.sku}</span>}
-                          </td>
-                          <td className="py-3 px-4 text-foreground">
-                            <div className="text-sm font-semibold">{formatCurrency(product.wholesalePrice)}</div>
-                            <div className="text-[10px] text-muted-foreground">Mín: {product.minQuantity} un.</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex flex-wrap gap-1">
-                              {product.modalities.map(mod => (
-                                <Badge key={mod} variant="secondary" className="text-[10px] px-1 h-4 font-normal">
-                                  {mod}
+            <div className="space-y-6">
+              {editingProductId ? (
+                <ProductForm 
+                  productId={editingProductId === 'new' ? undefined : editingProductId}
+                  onClose={() => setEditingProductId(null)}
+                  onSuccess={() => {
+                    setEditingProductId(null)
+                    fetchSupplierData()
+                  }}
+                />
+              ) : (
+                <Card className="bg-card border-border">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Meus Produtos</CardTitle>
+                        <CardDescription>
+                          Gerencie os produtos da sua vitrine
+                        </CardDescription>
+                      </div>
+                      <Button 
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        onClick={() => setEditingProductId('new')}
+                      >
+                        Adicionar Produto
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                              Produto
+                            </th>
+                            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                              Preco
+                            </th>
+                            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                              Status
+                            </th>
+                            <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
+                              Ações
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {supplierProducts.map((product) => (
+                            <tr key={product.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                              <td className="py-3 px-4">
+                                <span className="font-medium text-foreground block">
+                                  {product.name}
+                                </span>
+                                {product.sku && <span className="text-[10px] text-muted-foreground">SKU: {product.sku}</span>}
+                              </td>
+                              <td className="py-3 px-4 text-foreground">
+                                <div className="text-sm font-semibold">{formatCurrency(product.wholesale_price || product.wholesalePrice)}</div>
+                                <div className="text-[10px] text-muted-foreground">Mín: {product.min_quantity || product.minQuantity} un.</div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge
+                                  variant={product.ready_to_ship || product.readyToShip ? 'default' : 'outline'}
+                                  className={product.ready_to_ship || product.readyToShip ? 'bg-accent text-accent-foreground' : ''}
+                                >
+                                  {product.ready_to_ship || product.readyToShip ? 'Pronta Entrega' : 'Sob Encomenda'}
                                 </Badge>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge
-                              variant={product.readyToShip ? 'default' : 'outline'}
-                              className={product.readyToShip ? 'bg-accent text-accent-foreground' : ''}
-                            >
-                              {product.readyToShip ? 'Pronta Entrega' : 'Sob Encomenda'}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => setEditingProductId(product.id)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
           {activeSection === 'leads' && (
@@ -604,15 +619,6 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {isAddingProduct && (
-        <ProductForm 
-          onClose={() => setIsAddingProduct(false)} 
-          onSuccess={() => {
-            // Recarregar dados ou mostrar toast
-            console.log('Produto cadastrado!')
-          }} 
-        />
-      )}
     </div>
   )
 }

@@ -21,7 +21,7 @@ export function Footer() {
   }, [])
 
   return (
-    <footer className="bg-card border-t border-border mt-auto">
+    <footer className="bg-background border-t border-border/50 mt-12">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo e Descrição */}

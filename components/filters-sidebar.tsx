@@ -19,7 +19,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { categories, states, formatCurrency } from '@/lib/data'
+import { CATEGORIES, BRAZIL_STATES } from '@/lib/constants'
+import { formatCurrency } from '@/lib/data'
 
 export interface Filters {
   states: string[]
@@ -128,26 +129,26 @@ function FilterContent({ filters, onFiltersChange }: FiltersSidebarProps) {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="states">
-          <AccordionTrigger className="text-sm font-semibold">
-            Estado
+        <AccordionItem value="states" className="border-none">
+          <AccordionTrigger className="hover:no-underline py-2">
+            <span className="text-sm font-semibold">Estados</span>
           </AccordionTrigger>
           <AccordionContent>
-            <div className="space-y-3">
-              {states.map((state) => (
-                <div key={state} className="flex items-center space-x-2">
+            <div className="space-y-2 pt-2">
+              {BRAZIL_STATES.map((state) => (
+                <div key={state.value} className="flex items-center space-x-2">
                   <Checkbox
-                    id={`state-${state}`}
-                    checked={filters.states.includes(state)}
+                    id={`state-${state.value}`}
+                    checked={filters.states.includes(state.label)}
                     onCheckedChange={(checked) =>
-                      handleStateChange(state, checked as boolean)
+                      handleStateChange(state.label, checked as boolean)
                     }
                   />
                   <Label
-                    htmlFor={`state-${state}`}
-                    className="text-sm font-normal cursor-pointer"
+                    htmlFor={`state-${state.value}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    {state}
+                    {state.label}
                   </Label>
                 </div>
               ))}
@@ -155,26 +156,26 @@ function FilterContent({ filters, onFiltersChange }: FiltersSidebarProps) {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="categories">
-          <AccordionTrigger className="text-sm font-semibold">
-            Categoria
+        <AccordionItem value="categories" className="border-none">
+          <AccordionTrigger className="hover:no-underline py-2">
+            <span className="text-sm font-semibold">Categorias</span>
           </AccordionTrigger>
           <AccordionContent>
-            <div className="space-y-3">
-              {categories.map((category) => (
-                <div key={category} className="flex items-center space-x-2">
+            <div className="space-y-2 pt-2">
+              {CATEGORIES.map((category) => (
+                <div key={category.name} className="flex items-center space-x-2">
                   <Checkbox
-                    id={`category-${category}`}
-                    checked={filters.categories.includes(category)}
+                    id={`cat-${category.name}`}
+                    checked={filters.categories.includes(category.name)}
                     onCheckedChange={(checked) =>
-                      handleCategoryChange(category, checked as boolean)
+                      handleCategoryChange(category.name, checked as boolean)
                     }
                   />
                   <Label
-                    htmlFor={`category-${category}`}
-                    className="text-sm font-normal cursor-pointer"
+                    htmlFor={`cat-${category.name}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    {category}
+                    {category.name}
                   </Label>
                 </div>
               ))}

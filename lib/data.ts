@@ -57,27 +57,6 @@ export interface Lead {
   message: string
 }
 
-export const categories = [
-  "Moda Feminina",
-  "Moda Masculina",
-  "Acessórios",
-  "Calçados",
-  "Eletrônicos",
-  "Casa e Decoração",
-  "Cosméticos",
-  "Alimentos",
-]
-
-export const states = [
-  "São Paulo",
-  "Rio de Janeiro",
-  "Minas Gerais",
-  "Bahia",
-  "Paraná",
-  "Rio Grande do Sul",
-  "Santa Catarina",
-  "Goiás",
-]
 
 export const suppliers: Supplier[] = [
   {
