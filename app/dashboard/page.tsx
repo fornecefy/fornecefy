@@ -399,7 +399,7 @@ export default function DashboardPage() {
                     Quando lojistas entrarem em contato ou solicitarem orçamentos, eles aparecerão aqui.
                   </p>
                 </div>
-              </CardContent>nt>
+              </CardContent>
             </Card>
           )}
 
