@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('AuthContext: Evento de autenticação:', event)
-      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
+      if (session) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
@@ -107,6 +107,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone: profile.phone,
             cnpj: profile.cnpj,
             state: profile.state,
+          })
+        } else {
+          console.log('AuthContext: Sessão encontrada, mas sem perfil na tabela profiles.')
+          setUser({
+            id: session.user.id,
+            name: 'Usuário',
+            email: session.user.email!,
+            type: 'comprador',
+            company: '',
+            phone: '',
+            cnpj: '',
+            state: '',
           })
         }
       } else if (event === 'SIGNED_OUT') {
@@ -149,6 +161,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           setUser(userData)
           return { success: true, userType: profile.type }
+        } else {
+          // Usuário existe na auth mas não tem perfil (ex: master admin inicial)
+          setUser({
+            id: data.user.id,
+            name: 'Usuário',
+            email: data.user.email!,
+            type: 'comprador', // Default fallback
+            company: '',
+            phone: '',
+            cnpj: '',
+            state: '',
+          })
+          return { success: true }
         }
       }
 

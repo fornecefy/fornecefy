@@ -28,12 +28,34 @@ function SupplierContent({ supplierId }: { supplierId: string }) {
     const fetchSupplierData = async () => {
       setIsLoading(true)
       try {
-        // Busca Perfil
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', supplierId)
-          .single()
+        // Verifica se supplierId é um UUID válido
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const isUUID = uuidRegex.test(supplierId);
+
+        let query = supabase.from('profiles').select('*');
+        if (isUUID) {
+          query = query.eq('id', supplierId);
+        } else {
+          // Tenta primeiro por slug exato
+          query = query.eq('slug', supplierId);
+        }
+
+        let { data: profile, error } = await query.single();
+        
+        // Se não achou por slug, tenta achar por nome da empresa (decodificando a URL)
+        if (!profile && !isUUID) {
+           const decodedName = decodeURIComponent(supplierId);
+           const { data: profileByName } = await supabase
+             .from('profiles')
+             .select('*')
+             .ilike('name', decodedName)
+             .limit(1)
+             .single();
+           
+           if (profileByName) {
+             profile = profileByName;
+           }
+        }
         
         if (profile) {
           setSupplier(profile)
