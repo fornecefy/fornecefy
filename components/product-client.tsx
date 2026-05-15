@@ -56,13 +56,24 @@ export default function ProductClient({ productId }: { productId: string }) {
   useEffect(() => {
     async function fetchProductData() {
       try {
-        const { data: prod, error: prodError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', productId)
-          .single()
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const isUUID = uuidRegex.test(productId);
 
-        if (prodError || !prod) throw new Error('Produto não encontrado')
+        let query = supabase.from('products').select('*');
+        
+        if (isUUID) {
+          query = query.eq('id', productId);
+        } else {
+          query = query.eq('slug', productId);
+        }
+
+        const { data: prod, error: prodError } = await query.maybeSingle();
+
+        if (prodError || !prod) {
+          console.warn('Produto não encontrado:', productId)
+          setIsLoading(false)
+          return
+        }
 
         // Map to expected format
         const mappedProd = {

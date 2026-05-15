@@ -36,17 +36,12 @@ export function Marketplace() {
     const fetchData = async () => {
       // Fetch Fornecedores
       const data = await getSuppliers()
-      if (data.length > 0) {
-        setRealSuppliers(data)
-      } else {
-        setRealSuppliers(mockSuppliers)
-      }
+      setRealSuppliers(data)
       
       // Fetch Produtos
       const { data: prods } = await supabase
         .from('products')
         .select('*')
-        .eq('is_active', true)
         
       if (prods && prods.length > 0) {
         // Formata os produtos para o formato esperado pelo frontend
@@ -69,8 +64,8 @@ export function Marketplace() {
     fetchData()
   }, [])
 
-  const allSuppliers = realSuppliers.length > 0 ? realSuppliers : mockSuppliers
-  const activeProducts = realProducts.length > 0 ? realProducts : products
+  const allSuppliers = realSuppliers
+  const activeProducts = realProducts
 
   const suppliers = useMemo(() => {
     if (!searchQuery) return allSuppliers

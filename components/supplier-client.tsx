@@ -62,7 +62,6 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
             .from('products')
             .select('*')
             .eq('supplier_id', profile.id)
-            .eq('is_active', true)
           
           if (prods) setSupplierProducts(prods)
         }
