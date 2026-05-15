@@ -36,9 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check active session
     const checkUser = async () => {
       try {
+        console.log('AuthContext: Verificando sessão ativa...')
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user) {
+          console.log('AuthContext: Sessão encontrada para', session.user.email)
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .single()
           
           if (profile) {
+            console.log('AuthContext: Perfil carregado com sucesso:', profile.type)
             setUser({
               id: session.user.id,
               name: profile.name,
@@ -57,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               state: profile.state,
             })
           } else {
+            console.warn('AuthContext: Perfil não encontrado no banco.')
             // Fallback para caso o perfil não seja carregado
             setUser({
               id: session.user.id,
@@ -70,10 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             })
           }
         } else {
+          console.log('AuthContext: Nenhuma sessão ativa.')
           setUser(null)
         }
       } catch (error) {
-        console.error('Auth error:', error)
+        console.error('AuthContext: Erro ao verificar usuário:', error)
         setUser(null)
       } finally {
         setIsLoading(false)
@@ -84,7 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      console.log('AuthContext: Evento de autenticação:', event)
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
@@ -102,20 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             cnpj: profile.cnpj,
             state: profile.state,
           })
-        } else {
-          setUser({
-            id: session.user.id,
-            name: session.user.email!.split('@')[0],
-            email: session.user.email!,
-            type: 'comprador',
-            company: '',
-            phone: '',
-            cnpj: '',
-            state: '',
-          })
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
+        console.log('AuthContext: Usuário deslogado.')
       }
     })
 
