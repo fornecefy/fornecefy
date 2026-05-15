@@ -79,7 +79,6 @@ export default function MasterAdminPage() {
   const [isSavingSettings, setIsSavingSettings] = useReactState(false)
 
   const MASTER_EMAIL = 'fornecefy@gmail.com'
-
   useEffect(() => {
     console.log('MasterAdmin useEffect:', { isAuthLoading, user: user?.email, isAuthorized })
     if (isAuthLoading) return // Aguarda auth carregar
