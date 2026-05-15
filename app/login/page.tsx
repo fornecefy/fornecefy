@@ -30,18 +30,25 @@ function LoginContent() {
     setIsLoading(true)
 
     const { success, error, userType } = await login(email, password)
+    console.log('Login attempt result:', { success, userType, error })
     
     if (success) {
+      console.log('Login successful, determining redirect...')
       if (email === 'fornecefy@gmail.com') {
+        console.log('Redirecting to master-admin')
         router.push('/master-admin')
       } else if (userType === 'fornecedor') {
+        console.log('Redirecting to dashboard')
         router.push('/dashboard')
       } else if (userType === 'comprador') {
+        console.log('Redirecting to minha-conta')
         router.push('/minha-conta')
       } else {
+        console.log('Redirecting to fallback:', redirect)
         router.push(redirect)
       }
     } else {
+      console.error('Login failed:', error)
       setError(error || 'E-mail ou senha inválidos')
     }
     
