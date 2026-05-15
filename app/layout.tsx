@@ -12,26 +12,13 @@ export const metadata: Metadata = {
   description: 'Conecte-se com os melhores fornecedores do Brasil. Atacado, negociação direta e preços exclusivos para lojistas.',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/favicon.png',
+    apple: '/favicon.png',
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#1e3a5f',
+  themeColor: '#0033FF',
   width: 'device-width',
   initialScale: 1,
 }

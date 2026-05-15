@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ShoppingCart, Menu, X, Package, User, Heart, LogIn, LogOut, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -15,12 +15,26 @@ import {
 import { useCart } from '@/lib/cart-context'
 import { useFavorites } from '@/lib/favorites-context'
 import { useAuth } from '@/lib/auth-context'
+import { supabase } from '@/lib/supabase'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { getTotalItems } = useCart()
   const { getFavoriteProductsCount } = useFavorites()
   const { user, logout } = useAuth()
+  const [headerLogo, setHeaderLogo] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const { data } = await supabase.from('platform_settings').select('value').eq('key', 'header_logo_url').single()
+        if (data?.value) setHeaderLogo(data.value)
+      } catch (err) {
+        console.error('Erro ao carregar logo do header')
+      }
+    }
+    fetchLogo()
+  }, [])
   
   const totalItems = getTotalItems()
   const favoritesCount = getFavoriteProductsCount()
@@ -31,10 +45,16 @@ export function Header() {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Package className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">Fornecefy</span>
+            {headerLogo ? (
+              <img src={headerLogo} alt="Fornecefy" className="h-8 w-auto object-contain" />
+            ) : (
+              <>
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <Package className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-bold text-foreground">Fornecefy</span>
+              </>
+            )}
           </Link>
 
           {/* Desktop Navigation */}

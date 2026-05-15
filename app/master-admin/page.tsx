@@ -22,11 +22,16 @@ import {
   Target,
   Trash2,
   Pencil,
-  Package
+  Package,
+  Upload,
+  Image as ImageIcon,
+  X,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
@@ -65,6 +70,12 @@ export default function MasterAdminPage() {
   const [editingId, setEditingId] = useReactState<string | undefined>(undefined)
   const [initialSupplierId, setInitialSupplierId] = useReactState<string | undefined>(undefined)
 
+  const [platformSettings, setPlatformSettings] = useReactState({
+    header_logo_url: '',
+    footer_logo_url: ''
+  })
+  const [isSavingSettings, setIsSavingSettings] = useReactState(false)
+
   const MASTER_EMAIL = 'fornecefy@gmail.com'
 
   useEffect(() => {
@@ -76,9 +87,63 @@ export default function MasterAdminPage() {
       } else {
         setIsAuthorized(true)
         fetchAdminData()
+        fetchPlatformSettings()
       }
     }
   }, [user, isAuthLoading, router])
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const { data, error } = await supabase.from('platform_settings').select('*')
+      if (error) throw error
+      if (data) {
+        const settings: any = {}
+        data.forEach(s => { settings[s.key] = s.value })
+        setPlatformSettings({
+          header_logo_url: settings.header_logo_url || '',
+          footer_logo_url: settings.footer_logo_url || ''
+        })
+      }
+    } catch (err) {
+      console.error('Erro ao carregar configurações:', err)
+    }
+  }
+
+  const handleUploadBranding = async (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const uploadData = new FormData()
+    uploadData.append('file', file)
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: uploadData })
+      const data = await res.json()
+      if (data.url) {
+        setPlatformSettings(prev => ({ ...prev, [key]: data.url }))
+      }
+    } catch (err) {
+      alert('Erro no upload')
+    }
+  }
+
+  const savePlatformSettings = async () => {
+    setIsSavingSettings(true)
+    try {
+      const updates = [
+        { key: 'header_logo_url', value: platformSettings.header_logo_url },
+        { key: 'footer_logo_url', value: platformSettings.footer_logo_url }
+      ]
+
+      const { error } = await supabase.from('platform_settings').upsert(updates)
+      if (error) throw error
+      alert('Identidade visual atualizada com sucesso!')
+    } catch (err: any) {
+      alert('Erro ao salvar: ' + err.message)
+    } finally {
+      setIsSavingSettings(false)
+    }
+  }
 
   const [admins, setAdmins] = useReactState<any[]>([])
 
@@ -673,6 +738,85 @@ export default function MasterAdminPage() {
                       <p className="text-xs text-muted-foreground">Permitir fechamento direto no site</p>
                     </div>
                     <Switch />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-primary" />
+                    <CardTitle>Branding & Identidade</CardTitle>
+                  </div>
+                  <CardDescription>Configure os logotipos oficiais da plataforma</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <Label>Logo do Cabeçalho (Header)</Label>
+                      <div className="flex flex-col gap-4">
+                        <div className="h-20 w-full rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/50 overflow-hidden">
+                          {platformSettings.header_logo_url ? (
+                            <img src={platformSettings.header_logo_url} alt="Header Logo" className="h-12 w-auto object-contain" />
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Usando texto (padrão)</span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1 relative">
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload Header Logo
+                            <input 
+                              type="file" 
+                              className="absolute inset-0 opacity-0 cursor-pointer" 
+                              accept="image/*"
+                              onChange={(e) => handleUploadBranding(e, 'header_logo_url')}
+                            />
+                          </Button>
+                          {platformSettings.header_logo_url && (
+                            <Button variant="ghost" size="sm" onClick={() => setPlatformSettings({...platformSettings, header_logo_url: ''})}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Logo do Rodapé (Footer)</Label>
+                      <div className="flex flex-col gap-4">
+                        <div className="h-20 w-full rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/50 overflow-hidden">
+                          {platformSettings.footer_logo_url ? (
+                            <img src={platformSettings.footer_logo_url} alt="Footer Logo" className="h-12 w-auto object-contain" />
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Usando texto (padrão)</span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1 relative">
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload Footer Logo
+                            <input 
+                              type="file" 
+                              className="absolute inset-0 opacity-0 cursor-pointer" 
+                              accept="image/*"
+                              onChange={(e) => handleUploadBranding(e, 'footer_logo_url')}
+                            />
+                          </Button>
+                          {platformSettings.footer_logo_url && (
+                            <Button variant="ghost" size="sm" onClick={() => setPlatformSettings({...platformSettings, footer_logo_url: ''})}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-8 flex justify-end">
+                    <Button onClick={savePlatformSettings} disabled={isSavingSettings} className="gap-2">
+                      {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      Salvar Identidade Visual
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

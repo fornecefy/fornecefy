@@ -1,7 +1,25 @@
+"use client"
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Package } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export function Footer() {
+  const [footerLogo, setFooterLogo] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const { data } = await supabase.from('platform_settings').select('value').eq('key', 'footer_logo_url').single()
+        if (data?.value) setFooterLogo(data.value)
+      } catch (err) {
+        // Silencioso
+      }
+    }
+    fetchLogo()
+  }, [])
+
   return (
     <footer className="bg-card border-t border-border mt-auto">
       <div className="container mx-auto px-4 py-12">
@@ -9,10 +27,16 @@ export function Footer() {
           {/* Logo e Descrição */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Package className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">Fornecefy</span>
+              {footerLogo ? (
+                <img src={footerLogo} alt="Fornecefy" className="h-8 w-auto object-contain" />
+              ) : (
+                <>
+                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                    <Package className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  <span className="text-xl font-bold text-foreground">Fornecefy</span>
+                </>
+              )}
             </Link>
             <p className="text-sm text-muted-foreground">
               O marketplace B2B que conecta fornecedores e lojistas em todo o Brasil.
