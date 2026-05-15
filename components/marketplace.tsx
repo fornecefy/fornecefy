@@ -15,6 +15,7 @@ import { Filters, FiltersSidebar } from './filters-sidebar'
 import { useEffect } from 'react'
 import { getSuppliers } from '@/lib/services/supplier-service'
 import { Supplier } from '@/lib/data'
+import { supabase } from '@/lib/supabase'
 
 export function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -29,23 +30,53 @@ export function Marketplace() {
   })
 
   const [realSuppliers, setRealSuppliers] = useState<Supplier[]>([])
+  const [realProducts, setRealProducts] = useState<any[]>([])
 
   useEffect(() => {
-    const fetchSuppliers = async () => {
+    const fetchData = async () => {
+      // Fetch Fornecedores
       const data = await getSuppliers()
       if (data.length > 0) {
         setRealSuppliers(data)
       } else {
-        setRealSuppliers(mockSuppliers) // Fallback para mock se o banco estiver vazio ou falhar
+        setRealSuppliers(mockSuppliers)
+      }
+      
+      // Fetch Produtos
+      const { data: prods } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        
+      if (prods && prods.length > 0) {
+        // Formata os produtos para o formato esperado pelo frontend
+        const formattedProds = prods.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          originalPrice: p.original_price,
+          minOrderQuantity: p.min_order_quantity,
+          category: p.category || 'Geral',
+          images: p.images || [],
+          supplierId: p.supplier_id,
+          supplierName: p.supplier_name || 'Fornecedor',
+          readyToShip: p.ready_to_ship || false,
+          rating: p.rating || 0,
+          reviews: p.reviews || 0,
+          discount: p.discount || 0,
+        }))
+        setRealProducts(formattedProds)
       }
     }
-    fetchSuppliers()
+    fetchData()
   }, [])
 
   const suppliers = realSuppliers.length > 0 ? realSuppliers : mockSuppliers
+  const activeProducts = realProducts.length > 0 ? realProducts : products
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    return activeProducts.filter((product) => {
       // Global Search
       if (searchQuery) {
         const query = searchQuery.toLowerCase()

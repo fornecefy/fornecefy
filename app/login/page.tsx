@@ -34,7 +34,7 @@ function LoginContent() {
     
     if (success) {
       console.log('Login successful, determining redirect...')
-      if (email === 'fornecefy@gmail.com') {
+      if (email.toLowerCase() === 'fornecefy@gmail.com') {
         console.log('Redirecting to master-admin')
         router.replace('/master-admin')
       } else if (userType === 'fornecedor') {

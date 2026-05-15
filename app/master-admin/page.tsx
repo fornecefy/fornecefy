@@ -86,7 +86,7 @@ export default function MasterAdminPage() {
       return
     }
     
-    if (user.email !== MASTER_EMAIL) {
+    if (user.email.toLowerCase() !== MASTER_EMAIL.toLowerCase()) {
       console.log('MasterAdmin: Usuário não é admin:', user.email)
       router.push('/')
       return
