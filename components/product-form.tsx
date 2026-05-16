@@ -233,8 +233,21 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
         return
       }
 
+      const generateSlug = (text: string) => {
+        return text
+          .toString()
+          .toLowerCase()
+          .trim()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]+/g, '')
+          .replace(/--+/g, '-')
+      }
+
       const productData = {
         name: formData.name,
+        slug: generateSlug(formData.name),
         category: formData.category,
         subcategory: formData.subcategory,
         description: formData.description,

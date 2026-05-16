@@ -271,7 +271,7 @@ export function Marketplace() {
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {products
+                {activeProducts
                   .filter((p) => p.readyToShip)
                   .slice(0, 10)
                   .map((product) => (
@@ -293,7 +293,7 @@ export function Marketplace() {
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {products.map((product) => (
+                {activeProducts.map((product) => (
                   <ProductCard key={product.id} product={product} showActions={isSearching} />
                 ))}
               </div>
