@@ -104,7 +104,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('AuthContext: Evento de autenticação:', event)
-      if (session) {
+      
+      if (session?.user) {
+        // Se já temos o usuário no estado e o ID é o mesmo, não precisamos recarregar tudo
+        // a menos que seja um evento de SIGNED_IN ou TOKEN_REFRESHED
+        if (user?.id === session.user.id && event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') {
+          return
+        }
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
@@ -150,9 +157,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             })
           }
         }
-      } else if (event === 'SIGNED_OUT') {
+      } else {
+        console.log('AuthContext: Sessão encerrada ou inválida.')
         setUser(null)
-        console.log('AuthContext: Usuário deslogado.')
       }
     })
 

@@ -256,7 +256,7 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
           .replace(/--+/g, '-')
       }
 
-      const productData = {
+      const productData: any = {
         name: formData.name,
         slug: generateSlug(formData.name),
         category: formData.category,
@@ -285,25 +285,31 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
         variations: formData.variations
       }
 
-      console.log('Salvando produto:', productData)
+      console.log('Tentando salvar produto:', productData)
 
+      let result;
       if (productId) {
-        const { error: dbError } = await supabase
+        result = await supabase
           .from('products')
           .update(productData)
           .eq('id', productId)
-        if (dbError) throw dbError
       } else {
-        const { error: dbError } = await supabase
+        result = await supabase
           .from('products')
           .insert([productData])
-        if (dbError) throw dbError
       }
 
+      if (result.error) {
+        console.error('Erro Supabase ao salvar:', result.error)
+        throw new Error(result.error.message)
+      }
+
+      console.log('Produto salvo com sucesso!')
       onSuccess()
       onClose()
     } catch (err: any) {
-      setError('Erro ao salvar produto: ' + err.message)
+      console.error('Erro no handleSubmit:', err)
+      setError(err.message || 'Erro ao salvar produto. Tente novamente.')
     } finally {
       setIsLoading(false)
     }
