@@ -92,7 +92,7 @@ export function ProductCard({ product, variant = 'default', showActions = true }
           {/* Category Tag */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[10px] uppercase tracking-wider font-bold text-primary/70 bg-primary/5 px-2 py-0.5 rounded-full">
-              {product.modalities[0]}
+              {product.modalities?.[0] || 'Atacado'}
             </span>
           </div>
 

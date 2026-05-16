@@ -57,6 +57,7 @@ export function Marketplace() {
           supplierName: p.supplier_name || 'Fornecedor',
           readyToShip: p.ready_to_ship || false,
           verified: p.supplier_verified || false,
+          modalities: p.modalities || ['Atacado'],
         }))
         setRealProducts(formattedProds)
       }
