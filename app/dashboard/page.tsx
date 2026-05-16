@@ -417,7 +417,7 @@ export default function DashboardPage() {
               {editingProductId ? (
                 <ProductForm 
                   productId={editingProductId === 'new' ? undefined : editingProductId}
-                  initialSupplierId={currentSupplier?.id}
+                  initialSupplierId={user?.id}
                   onClose={() => setEditingProductId(null)}
                   onSuccess={() => {
                     setEditingProductId(null)
