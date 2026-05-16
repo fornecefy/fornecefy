@@ -238,12 +238,6 @@ export default function ProductClient({ productId }: { productId: string }) {
                   className="object-cover"
                   priority
                 />
-                {product.ready_to_ship && (
-                  <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground">
-                    <Truck className="w-3 h-3 mr-1" />
-                    Pronta Entrega
-                  </Badge>
-                )}
                 <div className="absolute top-4 right-4 flex flex-col gap-2">
                   <Button
                     variant="secondary"
@@ -278,6 +272,29 @@ export default function ProductClient({ productId }: { productId: string }) {
                   ))}
                 </div>
               )}
+              
+              {/* Tags / Badges */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className="text-xs uppercase tracking-wider font-bold text-primary/70 bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
+                  Atacado
+                </span>
+                {product.ready_to_ship && (
+                  <Badge variant="secondary" className="text-xs uppercase tracking-wider font-bold bg-green-500/10 text-green-600 hover:bg-green-500/20 px-3 py-1 rounded-full border border-green-500/20 gap-1 shadow-none">
+                    <Truck className="w-3.5 h-3.5" />
+                    Pronta Entrega
+                  </Badge>
+                )}
+                {product.collections && Array.isArray(product.collections) && product.collections.map((col: string, idx: number) => (
+                   <span key={idx} className="text-xs uppercase tracking-wider font-bold text-foreground bg-muted px-3 py-1 rounded-full border border-border">
+                     {col}
+                   </span>
+                ))}
+                {product.tags && Array.isArray(product.tags) && product.tags.map((tag: string, idx: number) => (
+                   <span key={idx} className="text-xs uppercase tracking-wider font-bold text-muted-foreground bg-muted/50 px-3 py-1 rounded-full border border-border/50">
+                     {tag}
+                   </span>
+                ))}
+              </div>
             </div>
 
             {/* Info Section */}

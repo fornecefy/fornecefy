@@ -78,22 +78,20 @@ export function ProductCard({ product, variant = 'default', showActions = true }
             className="object-cover group-hover:scale-110 transition-transform duration-700"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          
-          {product.readyToShip && (
-            <Badge className="absolute top-3 left-3 bg-primary text-white border-0 gap-1.5 shadow-lg backdrop-blur-md">
-              <Truck className="w-3.5 h-3.5" />
-              Pronta Entrega
-            </Badge>
-          )}
-
         </div>
         
         <CardContent className="p-4 flex-1 flex flex-col">
-          {/* Category Tag */}
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] uppercase tracking-wider font-bold text-primary/70 bg-primary/5 px-2 py-0.5 rounded-full">
+          {/* Tags / Badges */}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-primary/70 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
               {product.modalities?.[0] || 'Atacado'}
             </span>
+            {product.readyToShip && (
+              <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-bold bg-green-500/10 text-green-600 hover:bg-green-500/20 px-2 py-0.5 rounded-full border border-green-500/20 gap-1 shadow-none">
+                <Truck className="w-3 h-3" />
+                Pronta Entrega
+              </Badge>
+            )}
           </div>
 
           <div className="flex-1">

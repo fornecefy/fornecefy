@@ -99,10 +99,27 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
     }
   }, [searchTerm, supplierProducts])
 
-  const categories = useMemo(() => {
-    if (!supplierProducts) return []
-    const cats = new Set(supplierProducts.map(p => p.category).filter(Boolean))
-    return Array.from(cats).sort()
+  const categoriesAndMore = useMemo(() => {
+    if (!supplierProducts) return { categories: [], collections: [], tags: [] }
+    const cats = new Set<string>()
+    const colls = new Set<string>()
+    const tgs = new Set<string>()
+
+    supplierProducts.forEach(p => {
+      if (p.category) cats.add(p.category)
+      if (p.collections && Array.isArray(p.collections)) {
+        p.collections.forEach((c: string) => colls.add(c))
+      }
+      if (p.tags && Array.isArray(p.tags)) {
+        p.tags.forEach((t: string) => tgs.add(t))
+      }
+    })
+
+    return {
+      categories: Array.from(cats).sort(),
+      collections: Array.from(colls).sort(),
+      tags: Array.from(tgs).sort()
+    }
   }, [supplierProducts])
 
   if (isLoading) {
@@ -174,16 +191,6 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-        
-        <div className="container relative h-full mx-auto px-4">
-          <Link 
-            href="/" 
-            className="absolute top-6 left-4 flex items-center gap-2 text-white/80 hover:text-white transition-colors bg-black/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/10"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Voltar ao Marketplace</span>
-          </Link>
-        </div>
       </div>
 
       <main className="container mx-auto px-4">
@@ -194,12 +201,13 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
               <div className="flex flex-col md:flex-row items-center gap-5 p-6">
                 {/* Logo */}
                 <div className="relative shrink-0 -mt-16 md:-mt-0">
-                  <div className="w-24 h-24 rounded-full border-4 border-card bg-card shadow-lg overflow-hidden">
+                  <div className="w-24 h-24 rounded-full border-4 border-card bg-card shadow-lg overflow-hidden flex items-center justify-center">
                     <Image
                       src={supplier.logo || '/placeholder-logo.png'}
                       alt={supplier.name}
-                      fill
-                      className="object-cover"
+                      width={96}
+                      height={96}
+                      className="object-cover rounded-full h-full w-full"
                     />
                   </div>
                 </div>
@@ -278,16 +286,41 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
           </div>
 
           <TabsContent value="produtos" className="mt-0">
-            {/* Categories */}
-            {categories.length > 0 && (
-              <div className="mb-6 flex flex-wrap gap-2">
-                {categories.map((cat, idx) => (
-                  <Badge key={idx} variant="outline" className="rounded-full bg-card px-4 py-1.5 text-xs font-semibold">
-                    {cat}
-                  </Badge>
-                ))}
-              </div>
-            )}
+            {/* Categories, Collections and Tags */}
+            <div className="mb-6 flex flex-col gap-3">
+              {categoriesAndMore.categories.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-2">Categorias:</span>
+                  {categoriesAndMore.categories.map((cat, idx) => (
+                    <Badge key={idx} variant="secondary" className="rounded-full bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1 text-xs">
+                      {cat}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {categoriesAndMore.collections.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-2">Coleções:</span>
+                  {categoriesAndMore.collections.map((col, idx) => (
+                    <Badge key={idx} variant="outline" className="rounded-full border-primary/30 text-foreground px-3 py-1 text-xs">
+                      {col}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {categoriesAndMore.tags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider mr-2">Tags:</span>
+                  {categoriesAndMore.tags.map((tag, idx) => (
+                    <Badge key={idx} variant="outline" className="rounded-full border-muted-foreground/30 text-muted-foreground px-3 py-1 text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Filters and Search */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">

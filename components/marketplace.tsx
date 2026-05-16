@@ -44,7 +44,10 @@ export function Marketplace() {
       // Fetch Produtos
       const { data: prods } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          suppliers (name, verified)
+        `)
         
       if (prods && prods.length > 0) {
         // Formata os produtos para o formato esperado pelo frontend
@@ -57,9 +60,9 @@ export function Marketplace() {
           minQuantity: p.min_quantity || 1,
           category: p.category || p.categoria || 'Geral',
           supplierId: p.supplier_id,
-          supplierName: p.supplier_name || 'Fornecedor',
+          supplierName: p.suppliers?.name || p.supplier_name || 'Fornecedor',
           readyToShip: p.ready_to_ship || false,
-          verified: p.supplier_verified || false,
+          supplierVerified: p.suppliers?.verified || p.supplier_verified || false,
           modalities: p.modalities || ['Atacado'],
         }))
         setRealProducts(formattedProds)
