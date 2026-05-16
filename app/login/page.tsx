@@ -72,10 +72,14 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen bg-muted flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
+      <div className="absolute h-full w-full bg-background [mask-image:radial-gradient(500px_300px_at_top,transparent_20%,white)] pointer-events-none" />
+
       {/* Header simples */}
-      <header className="bg-card border-b border-border py-4">
-        <div className="container mx-auto px-4">
+      <header className="relative z-10 py-6">
+        <div className="container mx-auto px-4 flex justify-center">
           <Link href="/" className="flex items-center gap-2 w-fit">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Package className="w-5 h-5 text-primary-foreground" />
@@ -86,12 +90,12 @@ function LoginContent() {
       </header>
 
       {/* Form */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Entrar na sua conta</CardTitle>
-            <CardDescription>
-              Acesse o marketplace B2B do Brasil
+      <main className="flex-1 flex items-center justify-center p-4 relative z-10">
+        <Card className="w-full max-w-md border-border/40 shadow-2xl bg-card/80 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-500">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-3xl font-black">Bem-vindo de volta</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Acesse sua conta para continuar
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -147,10 +151,10 @@ function LoginContent() {
                 </Link>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full h-12 rounded-xl font-bold text-base shadow-lg shadow-primary/20" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Entrando...
                   </>
                 ) : (
@@ -161,7 +165,7 @@ function LoginContent() {
 
 
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-4 border-t border-border/40 pt-6">
             <div className="relative w-full">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
@@ -186,8 +190,8 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-muted flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex flex-col relative overflow-hidden items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     }>
       <LoginContent />

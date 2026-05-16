@@ -1,6 +1,76 @@
 export type Modalidade = "Atacado" | "Fabricante" | "Dropshipping" | "Distribuidor" | "Importador"
 export type Plan = "Básico" | "Pro" | "Premium" | "Elite"
 
+export interface PlanDetail {
+  id: Plan
+  name: string
+  price: number
+  description: string
+  features: string[]
+  highlight?: boolean
+  buttonText: string
+}
+
+export const PLAN_DETAILS: PlanDetail[] = [
+  {
+    id: "Básico",
+    name: "Plano Básico",
+    price: 0,
+    description: "Ideal para começar e testar a plataforma",
+    features: [
+      "Perfil básico",
+      "Até 10 produtos",
+      "Suporte por e-mail",
+      "Visualização de leads limitada"
+    ],
+    buttonText: "Começar Grátis"
+  },
+  {
+    id: "Pro",
+    name: "Plano Pro",
+    price: 29.90,
+    description: "Para fornecedores que buscam crescimento constante",
+    features: [
+      "Tudo do Básico",
+      "Até 50 produtos",
+      "Selo de verificado prata",
+      "Suporte priorizado",
+      "Dashboard completo de métricas"
+    ],
+    buttonText: "Assinar Pro"
+  },
+  {
+    id: "Premium",
+    name: "Plano Premium",
+    price: 49.90,
+    description: "Recursos avançados para quem quer dominar o mercado",
+    features: [
+      "Tudo do Pro",
+      "Produtos ilimitados",
+      "Selo de verificado ouro",
+      "Destaque nas buscas",
+      "Exportação de dados de leads",
+      "Suporte via WhatsApp"
+    ],
+    highlight: true,
+    buttonText: "Assinar Premium"
+  },
+  {
+    id: "Elite",
+    name: "Plano Elite",
+    price: 89.90,
+    description: "A experiência definitiva com visibilidade máxima",
+    features: [
+      "Tudo do Premium",
+      "Destaque máximo na vitrine inicial",
+      "Gerente de conta dedicado",
+      "Acesso antecipado a novos recursos",
+      "Treinamentos exclusivos"
+    ],
+    buttonText: "Assinar Elite"
+  }
+]
+
 export interface Product {
   id: string
   name: string

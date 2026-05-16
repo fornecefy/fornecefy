@@ -22,7 +22,8 @@ import {
   Pencil,
   Trash2,
   Copy,
-  MoreHorizontal
+  MoreHorizontal,
+  CheckCircle2
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -612,33 +613,33 @@ export default function DashboardPage() {
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Nome da Empresa
                     </label>
-                    <p className="text-muted-foreground">{currentSupplier.name}</p>
+                    <p className="text-muted-foreground">{supplier?.name}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Estado
                     </label>
-                    <p className="text-muted-foreground">{currentSupplier.state}</p>
+                    <p className="text-muted-foreground">{supplier?.state || '-'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Categoria
                     </label>
-                    <p className="text-muted-foreground">{currentSupplier.category}</p>
+                    <p className="text-muted-foreground">{supplier?.category || '-'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Pedido Minimo
                     </label>
                     <p className="text-muted-foreground">
-                      {formatCurrency(currentSupplier.min_order_value || 0)}
+                      {formatCurrency(supplier?.min_order_value || supplier?.minOrderValue || 0)}
                     </p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Sobre Nos
                     </label>
-                    <p className="text-muted-foreground">{currentSupplier.description}</p>
+                    <p className="text-muted-foreground">{supplier?.description || supplier?.bio || '-'}</p>
                   </div>
                 </div>
                 <Button 
@@ -676,6 +677,7 @@ export default function DashboardPage() {
                       Modalidades permitidas: <span className="font-semibold text-foreground">
                         {currentSupplier.plan === 'Básico' ? '1 modalidade' : 
                          currentSupplier.plan === 'Pro' ? '2 modalidades' : 
+                         currentSupplier.plan === 'Premium' ? '5 modalidades' :
                          'Ilimitadas'}
                       </span>
                     </li>
@@ -691,43 +693,37 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-               <Card className="bg-primary/5 border-primary/20 flex flex-col">
+               <Card className="bg-primary/5 border-primary flex flex-col">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-primary">Upgrade para Elite</CardTitle>
                       <CardDescription>
-                        Desbloqueie todo o potencial
+                        Desbloqueie todo o potencial da sua marca
                       </CardDescription>
                     </div>
-                    <Badge className="bg-primary text-primary-foreground">RECOMENDADO</Badge>
+                    <Badge className="bg-primary text-primary-foreground font-bold">RECOMENDADO</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col">
-                  <div className="mb-6">
-                    <p className="text-3xl font-bold text-primary">
-                      R$ 297<span className="text-lg font-normal text-muted-foreground">/mes</span>
-                    </p>
+                   <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-3xl font-black text-foreground">R$ 89,90</span>
+                    <span className="text-sm text-muted-foreground">/mês</span>
                   </div>
-                  <ul className="space-y-3 text-sm text-muted-foreground mb-8">
-                    <li className="flex items-center gap-2">
-                      <BadgeCheck className="w-4 h-4 text-primary" />
-                      Modalidades Ilimitadas
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <BadgeCheck className="w-4 h-4 text-primary" />
-                      Destaque na Home do Marketplace
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <BadgeCheck className="w-4 h-4 text-primary" />
-                      Prioridade Máxima no Suporte
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <BadgeCheck className="w-4 h-4 text-primary" />
-                      Exportação de Relatórios Avançados
-                    </li>
+                  <ul className="space-y-3 mb-8">
+                    {[
+                      'Destaque máximo na vitrine inicial', 
+                      'Gerente de conta dedicado', 
+                      'Prioridade Máxima no Suporte', 
+                      'Exportação de Relatórios Avançados'
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-primary" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
                   </ul>
-                  <Button className="w-full mt-auto bg-primary hover:bg-primary/90 text-primary-foreground py-6">
+                  <Button className="w-full mt-auto bg-primary hover:bg-primary/90 text-primary-foreground py-6 font-bold rounded-xl shadow-lg shadow-primary/20">
                     Fazer Upgrade Agora
                   </Button>
                 </CardContent>

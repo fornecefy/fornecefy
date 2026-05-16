@@ -583,6 +583,7 @@ export default function MasterAdminPage() {
                                 >
                                   <option value="Básico">Básico</option>
                                   <option value="Pro">Pro</option>
+                                  <option value="Premium">Premium</option>
                                   <option value="Elite">Elite</option>
                                 </select>
                               </TableCell>

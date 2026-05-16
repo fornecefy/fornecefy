@@ -97,7 +97,7 @@ function CadastroContent() {
     })
     
     if (success) {
-      router.push(userType === 'fornecedor' ? '/dashboard' : '/minha-conta')
+      router.push(userType === 'fornecedor' ? '/planos' : '/minha-conta')
     } else {
       setError(error || 'Erro ao realizar cadastro')
     }
@@ -106,10 +106,14 @@ function CadastroContent() {
   }
 
   return (
-    <div className="min-h-screen bg-muted flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
+      <div className="absolute h-full w-full bg-background [mask-image:radial-gradient(500px_300px_at_top,transparent_20%,white)] pointer-events-none" />
+      
       {/* Header simples */}
-      <header className="bg-card border-b border-border py-4">
-        <div className="container mx-auto px-4">
+      <header className="relative z-10 py-6">
+        <div className="container mx-auto px-4 flex justify-center">
           <Link href="/" className="flex items-center gap-2 w-fit">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Package className="w-5 h-5 text-primary-foreground" />
@@ -120,64 +124,78 @@ function CadastroContent() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 flex items-center justify-center p-4 py-8">
+      <main className="flex-1 flex items-center justify-center p-4 py-8 relative z-10">
         {step === 'type' ? (
-          <div className="w-full max-w-2xl">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-foreground mb-2">Criar uma conta</h1>
-              <p className="text-muted-foreground">Escolha como você quer usar o Fornecefy</p>
+          <div className="w-full max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="text-center mb-10">
+              <h1 className="text-4xl font-black text-foreground mb-3 tracking-tight">Crie sua conta</h1>
+              <p className="text-lg text-muted-foreground">Escolha o seu perfil para começarmos</p>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-6">
               <Card 
-                className="cursor-pointer transition-all hover:border-primary hover:shadow-md"
+                className="cursor-pointer transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1 bg-card/50 backdrop-blur-sm border-border/40 group"
                 onClick={() => handleSelectType('fornecedor')}
               >
-                <CardHeader className="text-center pb-2">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Building2 className="w-8 h-8 text-primary" />
+                <CardHeader className="text-center pb-4 pt-8">
+                  <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:bg-primary/20 transition-all">
+                    <Building2 className="w-10 h-10 text-primary" />
                   </div>
-                  <CardTitle>Sou Fornecedor</CardTitle>
-                  <CardDescription>
-                    Quero vender meus produtos para lojistas
+                  <CardTitle className="text-2xl">Sou Fornecedor</CardTitle>
+                  <CardDescription className="text-base mt-2">
+                    Quero vender meus produtos em atacado
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li>Crie sua vitrine virtual</li>
-                    <li>Receba leads qualificados</li>
-                    <li>Negocie diretamente via WhatsApp</li>
-                    <li>Gerencie seus produtos e pedidos</li>
+                <CardContent className="pb-8">
+                  <ul className="text-sm text-muted-foreground space-y-3">
+                    <li className="flex items-center justify-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Crie sua vitrine virtual
+                    </li>
+                    <li className="flex items-center justify-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Receba contatos direto no WhatsApp
+                    </li>
+                    <li className="flex items-center justify-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Aumente suas vendas
+                    </li>
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full">Cadastrar como Fornecedor</Button>
+                  <Button className="w-full h-12 rounded-xl font-bold shadow-lg shadow-primary/20">
+                    Começar como Fornecedor
+                  </Button>
                 </CardFooter>
               </Card>
 
               <Card 
-                className="cursor-pointer transition-all hover:border-primary hover:shadow-md"
+                className="cursor-pointer transition-all duration-300 hover:border-accent hover:shadow-xl hover:-translate-y-1 bg-card/50 backdrop-blur-sm border-border/40 group"
                 onClick={() => handleSelectType('comprador')}
               >
-                <CardHeader className="text-center pb-2">
-                  <div className="w-16 h-16 bg-accent/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <ShoppingBag className="w-8 h-8 text-accent-foreground" />
+                <CardHeader className="text-center pb-4 pt-8">
+                  <div className="w-20 h-20 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:bg-accent/30 transition-all">
+                    <ShoppingBag className="w-10 h-10 text-accent-foreground" />
                   </div>
-                  <CardTitle>Sou Comprador</CardTitle>
-                  <CardDescription>
-                    Quero encontrar fornecedores para minha loja
+                  <CardTitle className="text-2xl">Sou Comprador</CardTitle>
+                  <CardDescription className="text-base mt-2">
+                    Quero encontrar os melhores fornecedores
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li>Encontre milhares de produtos</li>
-                    <li>Compare preços de atacado</li>
-                    <li>Solicite orçamentos fácil</li>
-                    <li>Salve seus favoritos</li>
+                <CardContent className="pb-8">
+                  <ul className="text-sm text-muted-foreground space-y-3">
+                    <li className="flex items-center justify-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent-foreground" /> Encontre milhares de produtos
+                    </li>
+                    <li className="flex items-center justify-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent-foreground" /> Compare preços de atacado
+                    </li>
+                    <li className="flex items-center justify-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent-foreground" /> Salve seus fornecedores favoritos
+                    </li>
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="secondary" className="w-full">Cadastrar como Comprador</Button>
+                  <Button variant="secondary" className="w-full h-12 rounded-xl font-bold hover:bg-accent/80">
+                    Começar como Comprador
+                  </Button>
                 </CardFooter>
               </Card>
             </div>
@@ -190,19 +208,21 @@ function CadastroContent() {
             </p>
           </div>
         ) : (
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                {userType === 'fornecedor' ? (
-                  <Building2 className="w-5 h-5 text-primary" />
-                ) : (
-                  <ShoppingBag className="w-5 h-5 text-accent-foreground" />
-                )}
-                <span className="text-sm font-medium text-muted-foreground">
-                  {userType === 'fornecedor' ? 'Conta Fornecedor' : 'Conta Comprador'}
+          <Card className="w-full max-w-md border-border/40 shadow-2xl bg-card/80 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-500">
+            <CardHeader className="text-center pb-6">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className={`p-2 rounded-full ${userType === 'fornecedor' ? 'bg-primary/10' : 'bg-accent/20'}`}>
+                  {userType === 'fornecedor' ? (
+                    <Building2 className="w-5 h-5 text-primary" />
+                  ) : (
+                    <ShoppingBag className="w-5 h-5 text-accent-foreground" />
+                  )}
+                </div>
+                <span className="text-sm font-bold tracking-wider uppercase text-muted-foreground">
+                  {userType === 'fornecedor' ? 'Perfil Fornecedor' : 'Perfil Comprador'}
                 </span>
               </div>
-              <CardTitle className="text-2xl">Criar sua conta</CardTitle>
+              <CardTitle className="text-3xl font-black">Preencha seus dados</CardTitle>
               <CardDescription>
                 Preencha os dados para começar
               </CardDescription>
@@ -338,19 +358,19 @@ function CadastroContent() {
                   </Link>.
                 </p>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full h-12 rounded-xl font-bold text-base mt-2 shadow-lg shadow-primary/20" disabled={isLoading}>
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Criando conta...
                     </>
                   ) : (
-                    'Criar conta'
+                    userType === 'fornecedor' ? 'Continuar para os Planos' : 'Criar minha conta'
                   )}
                 </Button>
               </form>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter className="flex flex-col gap-4 border-t border-border/40 pt-6">
               <Button 
                 variant="ghost" 
                 className="w-full text-sm"
@@ -378,8 +398,8 @@ function CadastroContent() {
 export default function CadastroPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-muted flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex flex-col relative overflow-hidden items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     }>
       <CadastroContent />

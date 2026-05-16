@@ -64,6 +64,11 @@ export function Header() {
                 Blog
               </Button>
             </Link>
+            <Link href="/planos">
+              <Button variant="ghost" className="text-sm font-medium">
+                Planos
+              </Button>
+            </Link>
             <Link href="/favoritos">
               <Button variant="ghost" size="icon" className="relative">
                 <Heart className="h-4 w-4" />
@@ -244,6 +249,13 @@ export function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Blog
+                  </Link>
+                  <Link
+                    href="/planos"
+                    className="py-2 text-foreground hover:text-primary font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Planos
                   </Link>
                 </>
               )}
