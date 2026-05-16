@@ -19,8 +19,19 @@ import {
   Store,
   ExternalLink,
   BadgeCheck,
-  Pencil
+  Pencil,
+  Trash2,
+  Copy,
+  MoreHorizontal
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -89,6 +100,35 @@ export default function DashboardPage() {
       console.error('Erro ao carregar dados do dashboard:', err)
     } finally {
       setIsDataLoading(false)
+    }
+  }
+  
+  const handleDeleteProduct = async (productId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este produto?')) return
+    
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', productId)
+      if (error) throw error
+      fetchSupplierData()
+    } catch (err: any) {
+      alert('Erro ao excluir produto: ' + err.message)
+    }
+  }
+
+  const handleDuplicateProduct = async (product: any) => {
+    try {
+      const { id, created_at, ...productToClone } = product
+      const duplicatedProduct = {
+        ...productToClone,
+        name: `${product.name} (Cópia)`,
+        status: 'active'
+      }
+      
+      const { error } = await supabase.from('products').insert([duplicatedProduct])
+      if (error) throw error
+      fetchSupplierData()
+    } catch (err: any) {
+      alert('Erro ao duplicar produto: ' + err.message)
     }
   }
 
@@ -483,14 +523,38 @@ export default function DashboardPage() {
                                 </Badge>
                               </td>
                               <td className="py-3 px-4 text-right">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0"
-                                  onClick={() => setEditingProductId(product.id)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center justify-end gap-2">
+                                  <Link href={`/produto/${product.id}`} target="_blank">
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Visualizar">
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </Link>
+                                  
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-40">
+                                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem onClick={() => setEditingProductId(product.id)}>
+                                        <Pencil className="h-4 w-4 mr-2" /> Editar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleDuplicateProduct(product)}>
+                                        <Copy className="h-4 w-4 mr-2" /> Duplicar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem 
+                                        className="text-destructive focus:text-destructive" 
+                                        onClick={() => handleDeleteProduct(product.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </td>
                             </tr>
                           ))}
