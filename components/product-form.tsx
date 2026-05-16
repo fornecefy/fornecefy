@@ -215,15 +215,33 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
     setError('')
 
     try {
+      const wholesalePrice = parseFloat(formData.wholesalePrice)
+      const retailPrice = formData.retailPrice ? parseFloat(formData.retailPrice) : null
+      const dropshippingPrice = formData.dropshippingPrice ? parseFloat(formData.dropshippingPrice) : null
+      const minQuantity = parseInt(formData.minQuantity)
+      const stockQuantity = formData.has_stock_control ? parseInt(formData.stock_quantity) : 0
+
+      if (isNaN(wholesalePrice)) {
+        setError('Preço de atacado inválido')
+        setIsLoading(false)
+        return
+      }
+
+      if (!formData.supplier_id) {
+        setError('Erro: ID do fornecedor não encontrado. Tente recarregar a página.')
+        setIsLoading(false)
+        return
+      }
+
       const productData = {
         name: formData.name,
         category: formData.category,
         subcategory: formData.subcategory,
         description: formData.description,
-        wholesale_price: parseFloat(formData.wholesalePrice),
-        retail_price: formData.retailPrice ? parseFloat(formData.retailPrice) : null,
-        dropshipping_price: formData.dropshippingPrice ? parseFloat(formData.dropshippingPrice) : null,
-        min_quantity: parseInt(formData.minQuantity),
+        wholesale_price: wholesalePrice,
+        retail_price: isNaN(retailPrice as number) ? null : retailPrice,
+        dropshipping_price: isNaN(dropshippingPrice as number) ? null : dropshippingPrice,
+        min_quantity: isNaN(minQuantity) ? 1 : minQuantity,
         ready_to_ship: formData.readyToShip,
         image_url: formData.image,
         gallery_urls: formData.gallery,
@@ -233,7 +251,7 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
         modalities: formData.modalities,
         status: 'active',
         has_stock_control: formData.has_stock_control,
-        stock_quantity: formData.has_stock_control ? parseInt(formData.stock_quantity) : null,
+        stock_quantity: isNaN(stockQuantity) ? 0 : stockQuantity,
         weight: formData.weight,
         height: formData.height,
         width: formData.width,
@@ -242,6 +260,8 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
         collections: formData.collections,
         variations: formData.variations
       }
+
+      console.log('Salvando produto:', productData)
 
       if (productId) {
         const { error: dbError } = await supabase
