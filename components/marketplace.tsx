@@ -34,25 +34,33 @@ export function Marketplace() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchData = async () => {
+      if (!mounted) return;
       setIsLoading(true)
+      
       try {
         // Busca paralela para máxima velocidade
-        const [suppliersData, { data: prods }, { data: allSups }] = await Promise.all([
-          getSuppliers(),
+        const [suppliersData, productsResponse, allSuppliersInfo] = await Promise.all([
+          getSuppliers().catch(e => { console.error(e); return []; }),
           supabase.from('products').select('*'),
           supabase.from('suppliers').select('id, name, verified, user_id')
         ])
 
+        if (!mounted) return;
+
         if (suppliersData) {
-          setRealSuppliers(suppliersData)
+          setRealSuppliers(suppliersData as Supplier[])
         }
       
+        const prods = (productsResponse as any).data
+        const allSups = (allSuppliersInfo as any).data
+
         if (prods && prods.length > 0) {
-          // Formata os produtos para o formato esperado pelo frontend
-          const formattedProds = prods.map(p => {
-            const sup = (allSups || []).find(s => s.id === p.supplier_id || s.user_id === p.supplier_id) || 
-                        suppliersData.find(s => s.id === p.supplier_id)
+          const formattedProds = prods.map((p: any) => {
+            const sup = (allSups || []).find((s: any) => s.id === p.supplier_id || s.user_id === p.supplier_id) || 
+                        (suppliersData as Supplier[]).find(s => s.id === p.supplier_id)
             return {
               id: p.id,
               name: p.name,
@@ -73,10 +81,12 @@ export function Marketplace() {
       } catch (err) {
         console.error('Error fetching marketplace data:', err)
       } finally {
-        setIsLoading(false)
+        if (mounted) setIsLoading(false)
       }
     }
+
     fetchData()
+    return () => { mounted = false; }
   }, [])
 
   const allSuppliers = realSuppliers

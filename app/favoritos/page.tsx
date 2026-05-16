@@ -35,26 +35,61 @@ export default function FavoritosPage() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        // Fetch all products to filter (not ideal but works for now given current architecture)
-        const { data: prods } = await supabase.from('products').select('*')
-        const sups = await getSuppliers()
+        // 1. Buscar produtos favoritados
+        if (favoriteProducts.length > 0) {
+          const { data: prods } = await supabase
+            .from('products')
+            .select('*')
+            .in('id', favoriteProducts)
 
-        if (prods) {
-          // Format like Marketplace does
-          const formatted = prods.map(p => ({
-            id: p.id,
-            name: p.name,
-            wholesalePrice: p.wholesale_price || 0,
-            image: p.image_url || '/placeholder-product.jpg',
-            supplierName: sups.find(s => s.id === p.supplier_id)?.name || 'Fornecedor',
-            category: p.category || 'Geral',
-            readyToShip: p.ready_to_ship || false,
-            modalities: p.modalities || ['Atacado'],
-          }))
-          setRealProducts(formatted.filter(p => favoriteProducts.includes(p.id)))
+          if (prods) {
+            const formatted = prods.map(p => ({
+              id: p.id,
+              name: p.name,
+              wholesalePrice: p.wholesale_price || 0,
+              image: p.image_url || '/placeholder-product.jpg',
+              supplierName: 'Fornecedor', // Temporário, será atualizado se necessário
+              category: p.category || 'Geral',
+              readyToShip: p.ready_to_ship || false,
+              modalities: p.modalities || ['Atacado'],
+            }))
+            setRealProducts(formatted)
+          }
+        } else {
+          setRealProducts([])
         }
 
-        setRealSuppliers(sups.filter(s => favoriteSuppliers.includes(s.id)))
+        // 2. Buscar fornecedores favoritados (lojas seguidas)
+        if (favoriteSuppliers.length > 0) {
+          const { data: supsData } = await supabase
+            .from('suppliers')
+            .select('*')
+            .in('id', favoriteSuppliers)
+
+          if (supsData) {
+            const mappedSups = supsData.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              slug: item.slug,
+              logo: item.company_logo_url || '/placeholder-logo.png',
+              coverImage: item.cover_image_url || '/placeholder.jpg',
+              bio: item.description || '',
+              minOrderValue: item.min_order_value || 0,
+              state: item.state || '',
+              category: item.category || 'Geral',
+              whatsapp: item.whatsapp || '',
+              modalities: item.modalities || ['Atacado'],
+              plan: item.plan || 'Básico',
+              verified: item.verified || false,
+              rating: item.rating || 0,
+              products: [],
+            }))
+            setRealSuppliers(mappedSups)
+          }
+        } else {
+          setRealSuppliers([])
+        }
+
       } catch (err) {
         console.error('Erro ao carregar favoritos:', err)
       } finally {
@@ -65,10 +100,8 @@ export default function FavoritosPage() {
   }, [favoriteProducts, favoriteSuppliers])
 
   const favoriteProductsList = realProducts
-  const favoriteSuppliersList = realSuppliers
 
   const productsCount = favoriteProductsList.length
-  const suppliersCount = favoriteSuppliersList.length
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -85,7 +118,7 @@ export default function FavoritosPage() {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Favoritos</h1>
                 <p className="text-sm text-muted-foreground">
-                  {productsCount + suppliersCount} itens salvos
+                  {productsCount} {productsCount === 1 ? 'item salvo' : 'itens salvos'}
                 </p>
               </div>
             </div>
@@ -93,101 +126,95 @@ export default function FavoritosPage() {
         </div>
 
         <div className="container mx-auto px-4 py-6">
-          <Tabs defaultValue="produtos" className="space-y-6">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="produtos" className="gap-2">
-                <Package className="w-4 h-4" />
-                Produtos ({productsCount})
-              </TabsTrigger>
-              <TabsTrigger value="fornecedores" className="gap-2">
-                <Store className="w-4 h-4" />
-                Fornecedores ({suppliersCount})
-              </TabsTrigger>
-            </TabsList>
- 
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                <p className="text-muted-foreground animate-pulse">Buscando seus favoritos...</p>
-              </div>
-            ) : (
-              <>
-                {/* Products Tab */}
-                <TabsContent value="produtos">
-                  {favoriteProductsList.length === 0 ? (
-                    <EmptyState 
-                      icon={<Package className="w-16 h-16 text-muted-foreground" />}
-                      title="Nenhum produto favorito"
-                      description="Explore o marketplace e salve os produtos que você mais gostou clicando no coração."
-                      actionLabel="Explorar produtos"
-                      actionHref="/"
-                    />
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                          {productsCount} produto{productsCount !== 1 ? 's' : ''} salvo{productsCount !== 1 ? 's' : ''}
-                        </p>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => favoriteProducts.forEach(id => removeFavoriteProduct(id))}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Limpar tudo
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {favoriteProductsList.map(product => (
-                          <ProductCard key={product.id} product={product} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </TabsContent>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p className="text-muted-foreground animate-pulse">Buscando seus favoritos...</p>
+            </div>
+          ) : (
+            <Tabs defaultValue="produtos" className="space-y-6">
+              <TabsList className="bg-muted p-1 rounded-xl h-12 border border-border w-full max-w-md">
+                <TabsTrigger value="produtos" className="rounded-lg px-6 h-full font-bold data-[state=active]:shadow-sm">
+                  Produtos ({realProducts.length})
+                </TabsTrigger>
+                <TabsTrigger value="fornecedores" className="rounded-lg px-6 h-full font-bold data-[state=active]:shadow-sm">
+                  Lojas que Sigo ({realSuppliers.length})
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Suppliers Tab */}
-            <TabsContent value="fornecedores">
-              {favoriteSuppliersList.length === 0 ? (
-                <EmptyState 
-                  icon={<Store className="w-16 h-16 text-muted-foreground" />}
-                  title="Nenhum fornecedor favorito"
-                  description="Salve seus fornecedores preferidos para acessá-los rapidamente."
-                  actionLabel="Ver fornecedores"
-                  actionHref="/"
-                />
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      {suppliersCount} fornecedor{suppliersCount !== 1 ? 'es' : ''} salvo{suppliersCount !== 1 ? 's' : ''}
-                    </p>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => favoriteSuppliers.forEach(id => removeFavoriteSupplier(id))}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Limpar tudo
-                    </Button>
+              <TabsContent value="produtos" className="mt-0">
+                {realProducts.length === 0 ? (
+                  <EmptyState 
+                    icon={<Package className="w-16 h-16 text-muted-foreground" />}
+                    title="Nenhum produto favorito"
+                    description="Explore o marketplace e salve os produtos que você mais gostou."
+                    actionLabel="Explorar produtos"
+                    actionHref="/"
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        {realProducts.length} produto{realProducts.length !== 1 ? 's' : ''} salvo{realProducts.length !== 1 ? 's' : ''}
+                      </p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => favoriteProducts.forEach(id => removeFavoriteProduct(id))}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Limpar produtos
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {realProducts.map(product => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {favoriteSuppliersList.map(supplier => (
-                      <SupplierCard 
-                        key={supplier.id} 
-                        supplier={supplier}
-                        onRemove={() => removeFavoriteSupplier(supplier.id)}
-                      />
-                    ))}
+                )}
+              </TabsContent>
+
+              <TabsContent value="fornecedores" className="mt-0">
+                {realSuppliers.length === 0 ? (
+                  <EmptyState 
+                    icon={<Store className="w-16 h-16 text-muted-foreground" />}
+                    title="Nenhuma loja seguida"
+                    description="Siga seus fornecedores favoritos para acompanhar suas vitrines e novidades."
+                    actionLabel="Explorar fornecedores"
+                    actionHref="/"
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        {realSuppliers.length} loja{realSuppliers.length !== 1 ? 's' : ''} seguida{realSuppliers.length !== 1 ? 's' : ''}
+                      </p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => favoriteSuppliers.forEach(id => removeFavoriteSupplier(id))}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Limpar lojas
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {realSuppliers.map(supplier => (
+                        <SupplierCard 
+                          key={supplier.id} 
+                          supplier={supplier} 
+                          onRemove={() => removeFavoriteSupplier(supplier.id)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </TabsContent>
-            </>
-            )}
-          </Tabs>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </main>
 

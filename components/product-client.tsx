@@ -24,12 +24,15 @@ import {
   Play,
   Lock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Search as SearchIcon,
+  X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
@@ -55,6 +58,7 @@ export default function ProductClient({ productId }: { productId: string }) {
   const [addedToCart, setAddedToCart] = useState(false)
   const [activeImage, setActiveImage] = useState('')
   const [showFullDescription, setShowFullDescription] = useState(false)
+  const [isZoomOpen, setIsZoomOpen] = useState(false)
 
   useEffect(() => {
     async function fetchProductData() {
@@ -85,7 +89,8 @@ export default function ProductClient({ productId }: { productId: string }) {
           image: prod.image_url || prod.image || '/placeholder-product.jpg',
           minQuantity: prod.min_quantity || 1,
           category: prod.category || prod.categoria || 'Geral',
-          gallery: prod.gallery_urls || []
+          subcategory: prod.subcategory || prod.subcategoria || null,
+          supplier_id: prod.supplier_id,
         }
 
         setProduct(mappedProd)
@@ -203,7 +208,6 @@ export default function ProductClient({ productId }: { productId: string }) {
       <Header />
       
       <main className="flex-1">
-        {/* Breadcrumb */}
         <div className="bg-muted border-b border-border">
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center gap-2 text-sm">
@@ -211,9 +215,17 @@ export default function ProductClient({ productId }: { productId: string }) {
                 Início
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href={`/?categoria=${encodeURIComponent(product.category)}`} className="text-muted-foreground hover:text-foreground">
+              <Link href={`/?categoria=${encodeURIComponent(product.category)}`} className="text-muted-foreground hover:text-foreground shrink-0">
                 {product.category}
               </Link>
+              {product.subcategory && (
+                <>
+                  <span className="text-muted-foreground">/</span>
+                  <Link href={`/?categoria=${encodeURIComponent(product.category)}&subcategoria=${encodeURIComponent(product.subcategory)}`} className="text-muted-foreground hover:text-foreground shrink-0">
+                    {product.subcategory}
+                  </Link>
+                </>
+              )}
               <span className="text-muted-foreground">/</span>
               <span className="text-foreground font-medium truncate">{product.name}</span>
             </div>
@@ -221,7 +233,6 @@ export default function ProductClient({ productId }: { productId: string }) {
         </div>
 
         <div className="container mx-auto px-4 py-6">
-          {/* Back button - Mobile */}
           <Button 
             variant="ghost" 
             size="sm" 
@@ -232,44 +243,54 @@ export default function ProductClient({ productId }: { productId: string }) {
             Voltar
           </Button>
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-[450px_1fr] gap-12">
             {/* Image Section */}
             <div className="space-y-4">
-              <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border">
-                <Image
-                  src={activeImage || product.image}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-                <div className="absolute top-4 right-4 flex flex-col gap-2">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="rounded-full bg-white/90 hover:bg-white shadow-sm"
-                    onClick={handleFavorite}
-                  >
-                    <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="rounded-full bg-white/90 hover:bg-white shadow-sm"
-                    onClick={handleShare}
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+              <Dialog open={isZoomOpen} onOpenChange={setIsZoomOpen}>
+                <DialogTrigger asChild>
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border cursor-zoom-in group shadow-sm hover:shadow-md transition-shadow">
+                    <Image
+                      src={activeImage || product.image}
+                      alt={product.name}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                      <div className="bg-white/90 p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-4 group-hover:translate-y-0">
+                        <SearchIcon className="w-5 h-5 text-foreground" />
+                      </div>
+                    </div>
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-transparent border-none shadow-none flex items-center justify-center">
+                  <DialogTitle className="sr-only">Visualização ampliada do produto</DialogTitle>
+                  <div className="relative w-full h-[90vh] flex items-center justify-center group">
+                    <img 
+                      src={activeImage || product.image} 
+                      alt={product.name} 
+                      className="max-w-full max-h-full object-contain shadow-2xl rounded-lg cursor-zoom-out"
+                      onClick={() => setIsZoomOpen(false)}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white rounded-full h-10 w-10 border-none"
+                      onClick={() => setIsZoomOpen(false)}
+                    >
+                      <X className="w-6 h-6" />
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {/* Gallery Thumbnails */}
               {(product.gallery && product.gallery.length > 0) && (
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                   {[product.image, ...(product.gallery || [])].slice(0, 5).map((img, i) => (
                     <button
                       key={i}
-                      className={`relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${activeImage === img ? 'border-primary' : 'border-transparent'}`}
+                      className={`relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${activeImage === img ? 'border-primary shadow-sm' : 'border-transparent opacity-70 hover:opacity-100'}`}
                       onClick={() => setActiveImage(img)}
                     >
                       <Image src={img} alt={`${product.name} ${i}`} fill className="object-cover" />
@@ -280,17 +301,17 @@ export default function ProductClient({ productId }: { productId: string }) {
               
               {/* Tags / Badges */}
               <div className="flex flex-wrap items-center gap-2 pt-2">
-                <span className="text-xs uppercase tracking-wider font-bold text-primary/70 bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
+                <span className="text-[10px] uppercase tracking-widest font-bold text-primary/70 bg-primary/5 px-3 py-1.5 rounded-full border border-primary/10">
                   Atacado
                 </span>
                 {product.ready_to_ship && (
-                  <Badge variant="secondary" className="text-xs uppercase tracking-wider font-bold bg-green-500/10 text-green-600 hover:bg-green-500/20 px-3 py-1 rounded-full border border-green-500/20 gap-1 shadow-none">
+                  <Badge variant="secondary" className="text-[10px] uppercase tracking-widest font-bold bg-green-500/10 text-green-600 hover:bg-green-500/20 px-3 py-1.5 rounded-full border border-green-500/20 gap-1 shadow-none">
                     <Truck className="w-3.5 h-3.5" />
                     Pronta Entrega
                   </Badge>
                 )}
                 {product.collections && Array.isArray(product.collections) && product.collections.map((col: string, idx: number) => (
-                   <span key={idx} className="text-xs uppercase tracking-wider font-bold text-foreground bg-muted px-3 py-1 rounded-full border border-border">
+                   <span key={idx} className="text-[10px] uppercase tracking-widest font-bold text-foreground bg-muted px-3 py-1.5 rounded-full border border-border">
                      {col}
                    </span>
                 ))}
@@ -304,23 +325,30 @@ export default function ProductClient({ productId }: { productId: string }) {
 
             {/* Info Section */}
             <div className="space-y-6">
-              {/* Supplier Badge */}
-              <Link href={`/fornecedor/${supplier.slug || supplier.id}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <Image
-                  src={supplier.logo || '/placeholder-logo.png'}
-                  alt={supplier.name}
-                  width={24}
-                  height={24}
-                  className="rounded-full object-cover"
-                />
-                <span>{supplier.name}</span>
-                {supplier.verified && <BadgeCheck className="w-4 h-4 text-primary" />}
-              </Link>
-
               {/* Title */}
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground text-balance">
-                {product.name}
-              </h1>
+              <div className="flex items-start justify-between gap-4">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground text-balance">
+                  {product.name}
+                </h1>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-xl hover:bg-muted transition-colors"
+                    onClick={handleFavorite}
+                  >
+                    <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-xl hover:bg-muted transition-colors"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
               
               {product.sku && (
                 <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>

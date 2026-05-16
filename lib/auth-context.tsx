@@ -33,137 +33,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check active session
-    const checkUser = async () => {
+    let mounted = true;
+
+    const fetchProfile = async (sessionUser: any) => {
       try {
-        console.log('AuthContext: Verificando sessão ativa...')
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (session?.user) {
-          console.log('AuthContext: Sessão encontrada para', session.user.email)
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle()
-          
-          if (profile) {
-            console.log('AuthContext: Perfil carregado com sucesso:', profile.type)
-            setUser({
-              id: session.user.id,
-              name: profile.name,
-              email: session.user.email!,
-              type: profile.type,
-              company: profile.company,
-              phone: profile.phone,
-              cnpj: profile.cnpj,
-              state: profile.state,
-            })
-          } else {
-            // Fallback para caso o perfil não seja carregado na tabela profiles
-            const { data: supplierProfile } = await supabase
-              .from('suppliers')
-              .select('name')
-              .eq('user_id', session.user.id)
-              .maybeSingle()
-
-            if (supplierProfile) {
-              setUser({
-                id: session.user.id,
-                name: supplierProfile.name || 'Fornecedor',
-                email: session.user.email!,
-                type: 'fornecedor',
-              })
-            } else {
-              setUser({
-                id: session.user.id,
-                name: session.user.email!.split('@')[0],
-                email: session.user.email!,
-                type: 'comprador',
-                company: '',
-                phone: '',
-                cnpj: '',
-                state: '',
-              })
-            }
-          }
-        } else {
-          console.log('AuthContext: Nenhuma sessão ativa.')
-          setUser(null)
-        }
-      } catch (error) {
-        console.error('AuthContext: Erro ao verificar usuário:', error)
-        setUser(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    checkUser()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AuthContext: Evento de autenticação:', event)
-      
-      if (session?.user) {
-        // Se já temos o usuário no estado e o ID é o mesmo, não precisamos recarregar tudo
-        // a menos que seja um evento de SIGNED_IN ou TOKEN_REFRESHED
-        if (user?.id === session.user.id && event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') {
-          return
-        }
-
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', session.user.id)
+          .eq('id', sessionUser.id)
           .maybeSingle()
         
-        if (profile) {
+        if (profile && mounted) {
           setUser({
-            id: session.user.id,
+            id: sessionUser.id,
             name: profile.name,
-            email: session.user.email!,
+            email: sessionUser.email!,
             type: profile.type,
             company: profile.company,
             phone: profile.phone,
             cnpj: profile.cnpj,
             state: profile.state,
           })
-        } else {
-          // Fallback
+        } else if (mounted) {
+          // Fallback to suppliers table
           const { data: supplierProfile } = await supabase
             .from('suppliers')
             .select('name')
-            .eq('user_id', session.user.id)
+            .eq('user_id', sessionUser.id)
             .maybeSingle()
 
-          if (supplierProfile) {
-            setUser({
-              id: session.user.id,
-              name: supplierProfile.name || 'Fornecedor',
-              email: session.user.email!,
-              type: 'fornecedor',
-            })
-          } else {
-            setUser({
-              id: session.user.id,
-              name: 'Usuário',
-              email: session.user.email!,
-              type: 'comprador',
-              company: '',
-              phone: '',
-              cnpj: '',
-              state: '',
-            })
-          }
+          setUser({
+            id: sessionUser.id,
+            name: supplierProfile?.name || sessionUser.email!.split('@')[0],
+            email: sessionUser.email!,
+            type: supplierProfile ? 'fornecedor' : 'comprador',
+          })
         }
-      } else {
-        console.log('AuthContext: Sessão encerrada ou inválida.')
-        setUser(null)
+      } catch (error) {
+        console.error('Error fetching profile:', error)
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+
+    // Initialize session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && mounted) {
+        fetchProfile(session.user)
+      } else if (mounted) {
+        setIsLoading(false)
       }
     })
 
-    return () => subscription.unsubscribe()
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth Event:', event)
+      if (session?.user && mounted) {
+        fetchProfile(session.user)
+      } else if (mounted) {
+        setUser(null)
+        setIsLoading(false)
+      }
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; userType?: UserType }> => {

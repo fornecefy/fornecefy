@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input'
 import { formatCurrency } from '@/lib/data'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
+import { useCart } from '@/lib/cart-context'
+import { useFavorites } from '@/lib/favorites-context'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 
@@ -24,8 +26,16 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isFollowing, setIsFollowing] = useState(false)
+  const { addItem } = useCart()
+  const { isFavoriteProduct, toggleFavoriteProduct, toggleFavoriteSupplier, isFavoriteSupplier } = useFavorites()
   const { user } = useAuth()
   const router = useRouter()
+
+  useEffect(() => {
+    if (supplier) {
+      setIsFollowing(isFavoriteSupplier(supplier.id))
+    }
+  }, [supplier, isFavoriteSupplier])
 
   useEffect(() => {
     async function fetchSupplierData() {
@@ -67,6 +77,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
             youtube_video_url: profile.youtube_video_url || '',
           }
           setSupplier(mappedProfile)
+          setIsFollowing(isFavoriteSupplier(mappedProfile.id))
           
           const { data: prods } = await supabase
             .from('products')
@@ -94,7 +105,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
       }
     }
     fetchSupplierData()
-  }, [supplierId])
+  }, [supplierId, isFavoriteSupplier])
 
   useEffect(() => {
     if (searchTerm.trim() === '') {
@@ -172,8 +183,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
       router.push(`/login?redirect=/fornecedor/${supplierId}`)
       return
     }
-    setIsFollowing(!isFollowing)
-    // Aqui viria a lógica de salvar no banco
+    toggleFavoriteSupplier(supplier.id)
   }
 
   const getYoutubeEmbedUrl = (url: string) => {
