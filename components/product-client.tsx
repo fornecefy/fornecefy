@@ -117,7 +117,9 @@ export default function ProductClient({ productId }: { productId: string }) {
               wholesalePrice: r.wholesale_price || r.price || 0,
               image: r.image_url || r.image || '/placeholder-product.jpg',
               minQuantity: r.min_quantity || 1,
-              category: r.category || r.categoria || 'Geral'
+              category: r.category || r.categoria || 'Geral',
+              supplierName: supp.name,
+              supplierVerified: supp.verified
             })))
           }
         }

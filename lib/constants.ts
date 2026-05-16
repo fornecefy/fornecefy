@@ -30,35 +30,63 @@ export const BRAZIL_STATES = [
 
 export const CATEGORIES = [
   {
-    name: 'Moda',
-    subcategories: ['Masculino', 'Feminino', 'Infantil', 'Calçados', 'Acessórios', 'Moda Íntima', 'Moda Praia']
+    name: 'Moda e Acessórios',
+    subcategories: ['Masculino', 'Feminino', 'Infantil', 'Calçados', 'Acessórios', 'Moda Íntima', 'Moda Praia', 'Moda Fitness', 'Bolsas e Malas', 'Relógios', 'Óculos']
   },
   {
-    name: 'Eletrônicos',
-    subcategories: ['Celulares', 'Computadores', 'Áudio e Vídeo', 'Games', 'Câmeras', 'Periféricos']
+    name: 'Eletrônicos e Tecnologia',
+    subcategories: ['Celulares e Smartphones', 'Computadores e Notebooks', 'Áudio e Vídeo', 'Games e Consoles', 'Câmeras e Drones', 'Periféricos e Peças', 'Smartwatches', 'Segurança Eletrônica', 'Tablets']
   },
   {
-    name: 'Casa e Decoração',
-    subcategories: ['Móveis', 'Iluminação', 'Decoração', 'Cozinha', 'Cama, Mesa e Banho', 'Jardim']
+    name: 'Casa, Móveis e Decoração',
+    subcategories: ['Móveis', 'Iluminação', 'Decoração', 'Cozinha e Utensílios', 'Cama, Mesa e Banho', 'Jardim e Piscina', 'Artesanato', 'Organização da Casa', 'Eletrodomésticos']
   },
   {
-    name: 'Beleza e Saúde',
-    subcategories: ['Perfumaria', 'Maquiagem', 'Cabelo', 'Cuidados Pessoais', 'Suplementos']
+    name: 'Beleza e Cuidados Pessoais',
+    subcategories: ['Perfumaria', 'Maquiagem', 'Cabelo', 'Cuidados com a Pele', 'Suplementos e Vitaminas', 'Barbearia', 'Higiene Pessoal', 'Equipamentos de Salão']
   },
   {
     name: 'Alimentos e Bebidas',
-    subcategories: ['Bebidas', 'Doces e Snacks', 'Grãos e Massas', 'Congelados', 'Bebidas Alcoólicas']
+    subcategories: ['Bebidas Não Alcoólicas', 'Doces e Snacks', 'Grãos, Massas e Cereais', 'Congelados e Resfriados', 'Bebidas Alcoólicas', 'Produtos Naturais e Fit', 'Cafés e Chás', 'Temperos e Condimentos']
   },
   {
-    name: 'Construção e Ferramentas',
-    subcategories: ['Ferramentas', 'Material Elétrico', 'Hidráulica', 'Tintas e Acabamentos']
+    name: 'Saúde e Bem-estar',
+    subcategories: ['Equipamentos Médicos', 'Ortopedia', 'Primeiros Socorros', 'Odontologia', 'Saúde Sexual', 'Ópticas']
   },
   {
-    name: 'Automotivo',
-    subcategories: ['Peças', 'Acessórios', 'Pneus', 'Ferramentas Automotivas']
+    name: 'Esportes e Lazer',
+    subcategories: ['Fitness e Musculação', 'Ciclismo', 'Esportes de Aventura', 'Camping e Pesca', 'Futebol', 'Tênis e Beach Tennis', 'Artes Marciais', 'Suplementos Esportivos']
+  },
+  {
+    name: 'Pet Shop',
+    subcategories: ['Cães', 'Gatos', 'Peixes e Aquários', 'Aves', 'Répteis e Roedores', 'Farmácia Veterinária', 'Higiene e Estética Pet']
+  },
+  {
+    name: 'Brinquedos e Hobbies',
+    subcategories: ['Brinquedos Educativos', 'Bonecas e Bonecos', 'Jogos de Tabuleiro', 'Colecionáveis', 'Instrumentos Musicais', 'Modelismo', 'Artigos de Festa']
   },
   {
     name: 'Papelaria e Escritório',
-    subcategories: ['Escrita', 'Papéis', 'Organização', 'Móveis de Escritório']
+    subcategories: ['Escrita e Desenho', 'Papéis e Envelopes', 'Organização de Escritório', 'Informática', 'Embalagens e Envio', 'Livros e Revistas']
+  },
+  {
+    name: 'Construção e Ferramentas',
+    subcategories: ['Ferramentas Manuais', 'Ferramentas Elétricas', 'Material Elétrico', 'Hidráulica', 'Tintas e Acabamentos', 'Iluminação Profissional', 'Segurança do Trabalho (EPI)']
+  },
+  {
+    name: 'Automotivo',
+    subcategories: ['Peças de Reposição', 'Acessórios Externos', 'Acessórios Internos', 'Pneus e Rodas', 'Som e Vídeo Automotivo', 'Ferramentas Automotivas', 'Motos']
+  },
+  {
+    name: 'Joias e Relógios',
+    subcategories: ['Joias em Ouro', 'Semijoias', 'Prata 925', 'Relógios de Luxo', 'Bijuterias', 'Alianças']
+  },
+  {
+    name: 'Industrial e Comercial',
+    subcategories: ['Maquinário Pesado', 'Equipamentos de Cozinha Industrial', 'Limpeza Profissional', 'Sinalização', 'Embalagens Industriais', 'Geradores']
+  },
+  {
+    name: 'Agro e Indústria',
+    subcategories: ['Máquinas Agrícolas', 'Peças Agrícolas', 'Sementes e Fertilizantes', 'Pecuária', 'Irrigação', 'Ferramentas de Campo']
   }
 ];

@@ -10,7 +10,8 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  Search
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -95,8 +96,18 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
   const [newCollection, setNewCollection] = useState('')
   const [variationName, setVariationName] = useState('')
   const [variationValues, setVariationValues] = useState('')
+  const [categorySearch, setCategorySearch] = useState('')
+  const [subcategorySearch, setSubcategorySearch] = useState('')
 
   const selectedCategoryData = CATEGORIES.find(c => c.name === formData.category)
+
+  const filteredCategories = CATEGORIES.filter(cat => 
+    cat.name.toLowerCase().includes(categorySearch.toLowerCase())
+  )
+
+  const filteredSubcategories = selectedCategoryData?.subcategories.filter(sub => 
+    sub.toLowerCase().includes(subcategorySearch.toLowerCase())
+  ) || []
 
   useEffect(() => {
     if (productId) {
@@ -374,14 +385,35 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-3">
                 <Label htmlFor="category" className="text-base font-bold">Categoria</Label>
-                <Select value={formData.category} onValueChange={(v) => setFormData(prev => ({ ...prev, category: v, subcategory: '' }))}>
+                <Select value={formData.category} onValueChange={(v) => {
+                  setFormData(prev => ({ ...prev, category: v, subcategory: '' }))
+                  setCategorySearch('')
+                }}>
                   <SelectTrigger id="category" className="h-12">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map(cat => (
-                      <SelectItem key={cat.name} value={cat.name}>{cat.name}</SelectItem>
-                    ))}
+                    <div className="p-2 border-b sticky top-0 bg-popover z-10">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Pesquisar categoria..." 
+                          className="pl-8 h-9"
+                          value={categorySearch}
+                          onChange={(e) => setCategorySearch(e.target.value)}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {filteredCategories.length > 0 ? (
+                        filteredCategories.map(cat => (
+                          <SelectItem key={cat.name} value={cat.name}>{cat.name}</SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-4 text-xs text-center text-muted-foreground">Nenhuma categoria encontrada</div>
+                      )}
+                    </div>
                   </SelectContent>
                 </Select>
               </div>
@@ -389,16 +421,37 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
                 <Label htmlFor="subcategory" className="text-base font-bold">Subcategoria</Label>
                 <Select 
                   value={formData.subcategory} 
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, subcategory: v }))}
+                  onValueChange={(v) => {
+                    setFormData(prev => ({ ...prev, subcategory: v }))
+                    setSubcategorySearch('')
+                  }}
                   disabled={!formData.category}
                 >
                   <SelectTrigger id="subcategory" className="h-12">
                     <SelectValue placeholder={formData.category ? "Selecione" : "Escolha a categoria primeiro"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedCategoryData?.subcategories.map(sub => (
-                      <SelectItem key={sub} value={sub}>{sub}</SelectItem>
-                    ))}
+                    <div className="p-2 border-b sticky top-0 bg-popover z-10">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Pesquisar subcategoria..." 
+                          className="pl-8 h-9"
+                          value={subcategorySearch}
+                          onChange={(e) => setSubcategorySearch(e.target.value)}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {filteredSubcategories.length > 0 ? (
+                        filteredSubcategories.map(sub => (
+                          <SelectItem key={sub} value={sub}>{sub}</SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-4 text-xs text-center text-muted-foreground">Nenhuma encontrada</div>
+                      )}
+                    </div>
                   </SelectContent>
                 </Select>
               </div>

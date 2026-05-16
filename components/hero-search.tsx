@@ -39,7 +39,7 @@ export function HeroSearch({ onSearch, searchQuery }: HeroSearchProps) {
       <div className="container relative mx-auto px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-3xl md:text-5xl font-extrabold text-primary-foreground mb-4 tracking-tight">
-            O Marketplace B2B <span className="text-accent italic">Definitivo</span> do Brasil
+            O Marketplace B2B <span className="text-white italic">Definitivo</span> do Brasil
           </h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto font-medium">
             Conectamos lojistas aos melhores fabricantes e distribuidores em uma única plataforma segura e profissional.

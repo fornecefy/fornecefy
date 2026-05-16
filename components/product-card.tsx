@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { BadgeCheck, Truck, Store } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +23,7 @@ export function ProductCard({ product, variant = 'default', showActions = true }
   const { addItem } = useCart()
   const { isFavoriteProduct, toggleFavoriteProduct } = useFavorites()
   const { user } = useAuth()
+  const router = useRouter()
   const isFavorite = isFavoriteProduct(product.id)
   const isLoggedIn = !!user
 
@@ -35,6 +37,14 @@ export function ProductCard({ product, variant = 'default', showActions = true }
     e.preventDefault()
     e.stopPropagation()
     toggleFavoriteProduct(product.id)
+  }
+
+  const handleSupplierClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (product.supplierId) {
+      router.push(`/fornecedor/${product.supplierId}`)
+    }
   }
 
   if (variant === 'compact') {
@@ -99,15 +109,22 @@ export function ProductCard({ product, variant = 'default', showActions = true }
               {product.name}
             </h3>
             
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
-                <Store className="w-3 h-3 text-muted-foreground" />
+            {product.supplierName && product.supplierName !== 'Fornecedor' && product.supplierName !== 'Vitrine do Fornecedor' && (
+              <div 
+                className="flex items-center gap-2 mb-4 group/supplier cursor-pointer hover:bg-muted/30 p-1.5 -ml-1.5 rounded-lg transition-colors w-fit"
+                onClick={handleSupplierClick}
+              >
+                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border group-hover/supplier:border-primary/50 transition-colors">
+                  <Store className="w-3 h-3 text-muted-foreground group-hover/supplier:text-primary transition-colors" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground group-hover/supplier:text-foreground truncate transition-colors">
+                  {product.supplierName}
+                </span>
+                {product.supplierVerified && (
+                  <BadgeCheck className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                )}
               </div>
-              <span className="text-xs font-medium text-muted-foreground truncate">{product.supplierName}</span>
-              {product.supplierVerified && (
-                <BadgeCheck className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-              )}
-            </div>
+            )}
           </div>
 
           <div className="mt-auto pt-4 border-t border-border/50 space-y-3">

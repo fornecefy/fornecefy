@@ -455,6 +455,112 @@ export default function MasterAdminPage() {
                 </Card>
               </div>
 
+              {/* ANALYTICS DE PLANOS */}
+              <div className="grid lg:grid-cols-4 gap-6">
+                <Card className="border-none shadow-sm bg-card border-l-4 border-l-gray-300">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Plano Básico</CardTitle>
+                    <CardDescription>Gratuito</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-black">{suppliers.filter(s => !s.plan || s.plan === 'Básico').length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Usuários ativos</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm bg-card border-l-4 border-l-blue-500">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Plano Pro</CardTitle>
+                    <CardDescription>R$ 29,90/mês</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-black text-blue-600">{suppliers.filter(s => s.plan === 'Pro').length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Usuários ativos</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm bg-card border-l-4 border-l-purple-500">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Plano Premium</CardTitle>
+                    <CardDescription>R$ 49,90/mês</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-black text-purple-600">{suppliers.filter(s => s.plan === 'Premium').length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Usuários ativos</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm bg-card border-l-4 border-l-amber-500">
+                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Plano Elite</CardTitle>
+                      <CardDescription>R$ 89,90/mês</CardDescription>
+                    </div>
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-500 opacity-50" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-black text-amber-600">{suppliers.filter(s => s.plan === 'Elite').length}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Usuários ativos</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* AVISOS DE VENCIMENTO / CONTROLE */}
+              <div className="grid lg:grid-cols-3 gap-8">
+                <Card className="border-none shadow-sm bg-orange-500/5 border border-orange-500/20">
+                  <CardHeader>
+                    <div className="flex items-center gap-2 text-orange-600 mb-1">
+                      <AlertCircle className="w-5 h-5" />
+                      <CardTitle className="text-lg">Vencendo em breve</CardTitle>
+                    </div>
+                    <CardDescription>Assinaturas que expiram nos próximos 7 dias</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {suppliers.filter(s => {
+                        if (!s.plan_expires_at) return false;
+                        const days = Math.ceil((new Date(s.plan_expires_at).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                        return days > 0 && days <= 7;
+                      }).length}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Fornecedores requerem atenção</p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="border-none shadow-sm bg-red-500/5 border border-red-500/20">
+                  <CardHeader>
+                    <div className="flex items-center gap-2 text-red-600 mb-1">
+                      <XCircle className="w-5 h-5" />
+                      <CardTitle className="text-lg">Vencidas ou Inativas</CardTitle>
+                    </div>
+                    <CardDescription>Fornecedores pendentes ou bloqueados</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">
+                      {suppliers.filter(s => s.status !== 'approved').length}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Assinaturas canceladas/bloqueadas</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-none shadow-sm bg-emerald-500/5 border border-emerald-500/20">
+                  <CardHeader>
+                    <div className="flex items-center gap-2 text-emerald-600 mb-1">
+                      <TrendingUp className="w-5 h-5" />
+                      <CardTitle className="text-lg">Receita Recorrente</CardTitle>
+                    </div>
+                    <CardDescription>MRR Estimado (Planos Pagos)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-emerald-600">
+                      R$ {(
+                        suppliers.filter(s => s.plan === 'Pro' && s.status === 'approved').length * 29.90 +
+                        suppliers.filter(s => s.plan === 'Premium' && s.status === 'approved').length * 49.90 +
+                        suppliers.filter(s => s.plan === 'Elite' && s.status === 'approved').length * 89.90
+                      ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Estimativa mensal (exclui inativos)</p>
+                  </CardContent>
+                </Card>
+              </div>
+
               <div className="grid lg:grid-cols-3 gap-8">
                 <Card className="lg:col-span-2 border-none shadow-sm">
                   <CardHeader>

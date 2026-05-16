@@ -23,7 +23,8 @@ import {
   Trash2,
   Copy,
   MoreHorizontal,
-  CheckCircle2
+  CheckCircle2,
+  LogOut
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -45,19 +46,19 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 const navItems = [
-  { id: 'vitrine', label: 'Editar Perfil', icon: User },
-  { id: 'produtos', label: 'Produtos', icon: Package },
-  { id: 'leads', label: 'Leads', icon: Users },
+  { id: 'produtos', label: 'Meus Produtos', icon: Package },
+  { id: 'leads', label: 'Meus Leads', icon: Users },
+  { id: 'vitrine', label: 'Editar Vitrine', icon: User },
+  { id: 'perfil', label: 'Perfil Público', icon: Eye },
   { id: 'following', label: 'Lojas que Sigo', icon: Store },
-  { id: 'perfil', label: 'Ver Perfil', icon: Eye },
-  { id: 'plano', label: 'Plano', icon: CreditCard },
+  { id: 'plano', label: 'Meu Plano', icon: CreditCard },
 ]
 
 export default function DashboardPage() {
-  const [activeSection, setActiveSection] = useState('vitrine')
+  const [activeSection, setActiveSection] = useState('produtos')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [editingProductId, setEditingProductId] = useState<string | null | 'new'>(null)
-  const { user, isLoading: isAuthLoading } = useAuth()
+  const { user, isLoading: isAuthLoading, logout } = useAuth()
   const router = useRouter()
 
   const [currentSupplier, setCurrentSupplier] = useState<any>(null)
@@ -312,7 +313,7 @@ export default function DashboardPage() {
           {/* View Storefront & Back */}
           <div className="p-4 border-t border-sidebar-border space-y-2">
             <Link href={`/fornecedor/${supplier.slug || supplier.id}`} target="_blank">
-              <Button variant="outline" className="w-full gap-2 text-sidebar-foreground border-sidebar-border hover:bg-sidebar-accent">
+              <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground border-none shadow-lg shadow-primary/20 font-bold">
                 <ExternalLink className="w-4 h-4" />
                 Ver Minha Vitrine
               </Button>
@@ -323,6 +324,14 @@ export default function DashboardPage() {
                 Voltar ao Marketplace
               </Button>
             </Link>
+            <Button 
+              variant="ghost" 
+              onClick={logout}
+              className="w-full gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair da Conta
+            </Button>
           </div>
         </div>
       </aside>
@@ -347,69 +356,75 @@ export default function DashboardPage() {
         {/* Content */}
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
           {/* Metrics Cards - Always visible */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <Card className="bg-card border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card className="bg-card border-border shadow-sm border-l-4 border-l-blue-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
-                      Cliques no WhatsApp
+                      Produtos Ativos
                     </p>
-                    <p className="text-3xl font-bold text-foreground">
-                      0
+                    <p className="text-3xl font-black text-foreground">
+                      {supplierProducts.length}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-[#25D366]/10 rounded-full flex items-center justify-center">
-                    <MessageCircle className="w-6 h-6 text-[#25D366]" />
+                  <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <Package className="w-6 h-6 text-blue-500" />
                   </div>
-                </div>
-                <div className="flex items-center gap-1 mt-3 text-sm text-accent">
-                  <TrendingUp className="w-4 h-4" />
-                  <span>0% este mes</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-card border-border shadow-sm border-l-4 border-l-emerald-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
-                      Visualizacoes da Vitrine
+                      Cliques WhatsApp
                     </p>
-                    <p className="text-3xl font-bold text-foreground">
+                    <p className="text-3xl font-black text-foreground">
                       0
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                    <MessageCircle className="w-6 h-6 text-emerald-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border shadow-sm border-l-4 border-l-primary">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Visitas Vitrine
+                    </p>
+                    <p className="text-3xl font-black text-foreground">
+                      0
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
                     <Eye className="w-6 h-6 text-primary" />
                   </div>
                 </div>
-                <div className="flex items-center gap-1 mt-3 text-sm text-accent">
-                  <TrendingUp className="w-4 h-4" />
-                  <span>0% este mes</span>
-                </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border sm:col-span-2 lg:col-span-1">
+            <Card className="bg-card border-border shadow-sm border-l-4 border-l-accent">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
-                      Total de Leads
+                      Total Leads
                     </p>
-                    <p className="text-3xl font-bold text-foreground">
+                    <p className="text-3xl font-black text-foreground">
                       0
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center">
                     <Users className="w-6 h-6 text-accent" />
                   </div>
-                </div>
-                <div className="flex items-center gap-1 mt-3 text-sm text-accent">
-                  <TrendingUp className="w-4 h-4" />
-                  <span>0% este mes</span>
                 </div>
               </CardContent>
             </Card>
@@ -654,30 +669,31 @@ export default function DashboardPage() {
 
           {activeSection === 'plano' && (
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="bg-card border-border">
-                <CardHeader>
-                  <CardTitle>Plano Atual</CardTitle>
+              <Card className="bg-card border-border shadow-sm overflow-hidden">
+                <CardHeader className="bg-muted/30 border-b pb-4">
+                  <CardTitle className="text-xl">Meu Plano Atual</CardTitle>
                   <CardDescription>
-                    Seu plano e recursos disponiveis
+                    Gerencie sua assinatura e recursos da plataforma
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                    <div className="flex items-center gap-4 mb-6">
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                       <BadgeCheck className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">Plano {currentSupplier.plan}</p>
-                      <p className="text-sm text-muted-foreground">Ativo desde Jan 2024</p>
+                      <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold">Plano Ativo</p>
+                      <p className="text-2xl font-black text-primary">{supplier.plan}</p>
+                      <p className="text-xs text-muted-foreground">Assinatura renovada automaticamente</p>
                     </div>
                   </div>
                   <ul className="space-y-3 text-sm text-muted-foreground">
                     <li className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                       Modalidades permitidas: <span className="font-semibold text-foreground">
-                        {currentSupplier.plan === 'Básico' ? '1 modalidade' : 
-                         currentSupplier.plan === 'Pro' ? '2 modalidades' : 
-                         currentSupplier.plan === 'Premium' ? '5 modalidades' :
+                        {supplier.plan === 'Básico' ? '1 modalidade' : 
+                         supplier.plan === 'Pro' ? '2 modalidades' : 
+                         supplier.plan === 'Premium' ? '5 modalidades' :
                          'Ilimitadas'}
                       </span>
                     </li>
@@ -685,9 +701,12 @@ export default function DashboardPage() {
                       <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                       Produtos: <span className="font-semibold text-foreground">Ilimitados</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                      Selo de Verificado: <span className="font-semibold text-foreground">Ativo</span>
+                    <li className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-primary rounded-full shrink-0" />
+                      <span className="text-foreground">Selo de Verificado:</span>
+                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                        {supplier.verified ? 'Ativo' : 'Pendente'}
+                      </Badge>
                     </li>
                   </ul>
                 </CardContent>

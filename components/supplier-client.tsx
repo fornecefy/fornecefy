@@ -74,8 +74,17 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
             .or(`supplier_id.eq.${profile.id},supplier_id.eq.${profile.user_id}`)
           
           if (prods) {
-            setSupplierProducts(prods)
-            setFilteredProducts(prods)
+            const mappedProds = prods.map(p => ({
+              ...p,
+              wholesalePrice: p.wholesale_price || p.price || 0,
+              image: p.image_url || p.image || '/placeholder-product.jpg',
+              minQuantity: p.min_quantity || 1,
+              category: p.category || p.categoria || 'Geral',
+              supplierName: mappedProfile.name,
+              supplierVerified: mappedProfile.verified
+            }))
+            setSupplierProducts(mappedProds)
+            setFilteredProducts(mappedProds)
           }
         }
       } catch (err) {

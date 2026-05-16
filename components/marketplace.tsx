@@ -44,27 +44,31 @@ export function Marketplace() {
       // Fetch Produtos
       const { data: prods } = await supabase
         .from('products')
-        .select(`
-          *,
-          suppliers (name, verified)
-        `)
+        .select('*')
+        
+      const { data: allSups } = await supabase
+        .from('suppliers')
+        .select('id, name, verified, user_id')
         
       if (prods && prods.length > 0) {
         // Formata os produtos para o formato esperado pelo frontend
-        const formattedProds = prods.map(p => ({
-          id: p.id,
-          name: p.name,
-          description: p.description,
-          wholesalePrice: p.wholesale_price || p.price || 0,
-          image: p.image_url || p.image || '/placeholder-product.jpg',
-          minQuantity: p.min_quantity || 1,
-          category: p.category || p.categoria || 'Geral',
-          supplierId: p.supplier_id,
-          supplierName: p.suppliers?.name || p.supplier_name || 'Fornecedor',
-          readyToShip: p.ready_to_ship || false,
-          supplierVerified: p.suppliers?.verified || p.supplier_verified || false,
-          modalities: p.modalities || ['Atacado'],
-        }))
+        const formattedProds = prods.map(p => {
+          const sup = (allSups || []).find(s => s.id === p.supplier_id || s.user_id === p.supplier_id) || data.find(s => s.id === p.supplier_id)
+          return {
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            wholesalePrice: p.wholesale_price || p.price || 0,
+            image: p.image_url || p.image || '/placeholder-product.jpg',
+            minQuantity: p.min_quantity || 1,
+            category: p.category || p.categoria || 'Geral',
+            supplierId: p.supplier_id,
+            supplierName: sup?.name || p.supplier_name || 'Fornecedor',
+            readyToShip: p.ready_to_ship || false,
+            supplierVerified: sup?.verified || p.supplier_verified || false,
+            modalities: p.modalities || ['Atacado'],
+          }
+        })
         setRealProducts(formattedProds)
       }
       } catch (err) {
