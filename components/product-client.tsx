@@ -90,13 +90,19 @@ export default function ProductClient({ productId }: { productId: string }) {
         setQuantity(mappedProd.minQuantity)
 
         if (mappedProd.supplier_id) {
+          // Busca o fornecedor tentando pelo ID direto ou pelo User ID vinculado
           const { data: supp } = await supabase
             .from('suppliers')
             .select('*')
-            .eq('id', mappedProd.supplier_id)
-            .single()
+            .or(`id.eq.${mappedProd.supplier_id},user_id.eq.${mappedProd.supplier_id}`)
+            .maybeSingle()
           
-          if (supp) setSupplier(supp)
+          if (supp) {
+            setSupplier({
+              ...supp,
+              logo: supp.company_logo_url || '/placeholder-logo.png'
+            })
+          }
 
           const { data: related } = await supabase
             .from('products')

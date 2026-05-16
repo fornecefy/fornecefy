@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, BadgeCheck, MapPin, MessageCircle, Share2, UserPlus, Youtube, Instagram, Facebook, Globe, AlertTriangle, Search, Filter } from 'lucide-react'
+import { ArrowLeft, BadgeCheck, MapPin, MessageCircle, Share2, UserPlus, Users, Youtube, Instagram, Facebook, Globe, AlertTriangle, Search, Filter } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -150,7 +150,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
       <Header />
       
       {/* Banner Hero */}
-      <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden">
+      <div className="relative h-[250px] md:h-[300px] w-full overflow-hidden">
         <Image
           src={supplier.coverImage}
           alt={supplier.name}
@@ -173,75 +173,68 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
 
       <main className="container mx-auto px-4">
         {/* Floating Header Card */}
-        <div className="relative -mt-32 mb-12">
-          <Card className="overflow-hidden border-none shadow-2xl bg-card/95 backdrop-blur-xl">
+        <div className="relative -mt-16 mb-8">
+          <Card className="overflow-hidden border-none shadow-xl bg-card/95 backdrop-blur-xl">
             <CardContent className="p-0">
-              <div className="flex flex-col md:flex-row items-center md:items-end gap-8 p-8">
+              <div className="flex flex-col md:flex-row items-center gap-5 p-6">
                 {/* Logo */}
-                <div className="relative -mt-20 md:mt-0">
-                  <div className="w-32 h-32 md:w-44 md:h-44 rounded-full border-4 border-card overflow-hidden bg-card shadow-2xl">
+                <div className="relative shrink-0 -mt-16 md:-mt-0">
+                  <div className="w-24 h-24 rounded-2xl border-4 border-card bg-card shadow-lg overflow-hidden">
                     <Image
-                      src={supplier.logo}
+                      src={supplier.logo || '/placeholder-logo.png'}
                       alt={supplier.name}
-                      width={176}
-                      height={176}
-                      className="object-cover w-full h-full"
+                      fill
+                      className="object-cover"
                     />
                   </div>
                   {supplier.verified && (
-                    <div className="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full shadow-xl border-4 border-card">
-                      <BadgeCheck className="w-6 h-6" />
+                    <div className="absolute -bottom-1 -right-1 bg-primary text-white p-1 rounded-full shadow-lg border-2 border-card z-20">
+                      <BadgeCheck className="w-3.5 h-3.5" />
                     </div>
                   )}
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 text-center md:text-left">
-                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
-                    <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight">
+                <div className="flex-1 text-center md:text-left min-w-0">
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 mb-1.5">
+                    <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight">
                       {supplier.name}
                     </h1>
-                    <Badge variant="secondary" className="rounded-full px-4 py-1 bg-primary/10 text-primary border-primary/20 font-bold uppercase tracking-wider text-[10px]">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] uppercase font-bold px-2.5 py-0.5">
                       {supplier.category}
                     </Badge>
                   </div>
-
-                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-muted-foreground font-medium">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-primary" />
-                      </div>
-                      <span>{supplier.state}</span>
+                  
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-xs text-muted-foreground font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
+                      {supplier.state}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <div className="text-[10px] font-bold text-primary">R$</div>
-                      </div>
-                      <span>Mínimo: {formatCurrency(supplier.minOrderValue)}</span>
+                    <span className="text-border hidden md:inline">•</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-primary font-bold">R$</span>
+                      Pedido mínimo: {formatCurrency(supplier.minOrderValue)}
                     </div>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-2 shrink-0">
                   <Button 
-                    size="lg" 
-                    className={`rounded-2xl h-14 px-8 text-base font-bold gap-3 shadow-xl transition-all border-none ${isFollowing ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'}`}
+                    className={`rounded-xl px-6 h-10 font-bold shadow-md gap-2 text-sm ${isFollowing ? 'bg-muted text-foreground shadow-none' : 'bg-primary text-primary-foreground shadow-primary/20'}`}
                     onClick={handleFollow}
                   >
-                    <UserPlus className="w-5 h-5" />
+                    <Users className="w-4 h-4" />
                     {isFollowing ? 'Seguindo' : 'Seguir Loja'}
                   </Button>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 rounded-2xl h-12 border-border/40 hover:bg-muted font-bold"
-                      onClick={handleShare}
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Compartilhar
-                    </Button>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="rounded-xl h-10 w-10"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
