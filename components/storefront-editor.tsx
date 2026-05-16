@@ -15,8 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import { CATEGORIES, BRAZIL_STATES } from '@/lib/constants'
 import { formatCurrency } from '@/lib/data'
+import { supabase } from '@/lib/supabase'
+import { Lock, Layout, Info, Youtube as YoutubeIcon } from 'lucide-react'
 
 interface StorefrontData {
   name: string
@@ -42,6 +50,13 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
   const [showPreview, setShowPreview] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  
+  // Password change state
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
   
   const logoInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
@@ -103,6 +118,34 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
     setIsSaving(true)
     onSave(data)
     setIsSaving(false)
+  }
+
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) {
+      setPasswordError('As senhas não coincidem.')
+      return
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('A senha deve ter pelo menos 6 caracteres.')
+      return
+    }
+
+    setIsUpdatingPassword(true)
+    setPasswordError('')
+    setPasswordSuccess('')
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      setPasswordSuccess('Senha atualizada com sucesso!')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: any) {
+      setPasswordError(err.message || 'Erro ao atualizar senha.')
+    } finally {
+      setIsUpdatingPassword(false)
+    }
   }
 
   const formatPhoneInput = (value: string | undefined | null) => {
@@ -229,262 +272,353 @@ export function StorefrontEditor({ initialData, onSave }: StorefrontEditorProps)
         </Card>
       ) : (
         // Edit Mode
-        <div className="grid gap-6">
-          {/* Banner Upload */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-lg">Banner da Vitrine</CardTitle>
-              <CardDescription>
-                Imagem de capa que aparece no topo da sua página (recomendado: 1200x300px)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="relative h-48 md:h-64 bg-muted rounded-lg overflow-hidden group">
-                <Image
-                  src={coverPreview || data.coverImage || '/placeholder.jpg'}
-                  alt="Banner"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button
-                    variant="secondary"
-                    onClick={() => coverInputRef.current?.click()}
-                    className="gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Alterar Banner
-                  </Button>
-                </div>
-                {coverPreview && (
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2"
-                    onClick={() => {
-                      setCoverPreview(null)
-                      setData(prev => ({ ...prev, coverImage: initialData.coverImage }))
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-              <input
-                ref={coverInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleCoverChange}
-              />
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="appearance" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8 h-12 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="appearance" className="rounded-lg gap-2">
+              <Layout className="w-4 h-4" /> Aparência
+            </TabsTrigger>
+            <TabsTrigger value="info" className="rounded-lg gap-2">
+              <Info className="w-4 h-4" /> Informações
+            </TabsTrigger>
+            <TabsTrigger value="video" className="rounded-lg gap-2">
+              <YoutubeIcon className="w-4 h-4" /> Vídeo & Bio
+            </TabsTrigger>
+            <TabsTrigger value="security" className="rounded-lg gap-2">
+              <Lock className="w-4 h-4" /> Segurança
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Logo Upload */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-lg">Logo da Empresa</CardTitle>
-              <CardDescription>
-                Sua marca que aparece em cards e na vitrine (recomendado: 200x200px)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-6">
-                <div className="relative w-32 h-32 rounded-lg bg-muted overflow-hidden group">
+          <TabsContent value="appearance" className="space-y-6">
+            {/* Banner Upload */}
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg">Banner da Vitrine</CardTitle>
+                <CardDescription>
+                  Imagem de capa que aparece no topo da sua página (recomendado: 1200x300px)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="relative h-48 md:h-64 bg-muted rounded-lg overflow-hidden group">
                   <Image
-                    src={logoPreview || data.logo || '/placeholder-logo.png'}
-                    alt="Logo"
+                    src={coverPreview || data.coverImage || '/placeholder.jpg'}
+                    alt="Banner"
                     fill
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Button
                       variant="secondary"
-                      size="icon"
-                      onClick={() => logoInputRef.current?.click()}
+                      onClick={() => coverInputRef.current?.click()}
+                      className="gap-2"
                     >
-                      <Camera className="w-4 h-4" />
+                      <Upload className="w-4 h-4" />
+                      Alterar Banner
                     </Button>
                   </div>
-                </div>
-                <div className="flex-1">
-                  <Button
-                    variant="outline"
-                    onClick={() => logoInputRef.current?.click()}
-                    className="gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Enviar Nova Logo
-                  </Button>
-                  {logoPreview && (
+                  {coverPreview && (
                     <Button
-                      variant="ghost"
-                      className="ml-2 text-destructive"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
                       onClick={() => {
-                        setLogoPreview(null)
-                        setData(prev => ({ ...prev, logo: initialData.logo }))
+                        setCoverPreview(null)
+                        setData(prev => ({ ...prev, coverImage: initialData.coverImage }))
                       }}
                     >
-                      Remover
+                      <X className="w-4 h-4" />
                     </Button>
                   )}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    JPG, PNG ou GIF. Tamanho máximo de 2MB.
-                  </p>
                 </div>
-              </div>
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleLogoChange}
-              />
-            </CardContent>
-          </Card>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCoverChange}
+                />
+              </CardContent>
+            </Card>
 
-          {/* Basic Info */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-lg">Informações da Empresa</CardTitle>
-              <CardDescription>
-                Dados básicos que aparecem na sua vitrine
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome da Empresa</Label>
-                  <Input
-                    id="name"
-                    value={data.name}
-                    onChange={(e) => setData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Nome da sua empresa"
-                  />
+            {/* Logo Upload */}
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg">Logo da Empresa</CardTitle>
+                <CardDescription>
+                  Sua marca que aparece em cards e na vitrine (recomendado: 200x200px)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-6">
+                  <div className="relative w-32 h-32 rounded-lg bg-muted overflow-hidden group">
+                    <Image
+                      src={logoPreview || data.logo || '/placeholder-logo.png'}
+                      alt="Logo"
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={() => logoInputRef.current?.click()}
+                      >
+                        <Camera className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <Button
+                      variant="outline"
+                      onClick={() => logoInputRef.current?.click()}
+                      className="gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Enviar Nova Logo
+                    </Button>
+                    {logoPreview && (
+                      <Button
+                        variant="ghost"
+                        className="ml-2 text-destructive"
+                        onClick={() => {
+                          setLogoPreview(null)
+                          setData(prev => ({ ...prev, logo: initialData.logo }))
+                        }}
+                      >
+                        Remover
+                      </Button>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      JPG, PNG ou GIF. Tamanho máximo de 2MB.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp">WhatsApp para Contato</Label>
-                  <Input
-                    id="whatsapp"
-                    value={formatPhoneInput(data.whatsapp)}
-                    onChange={(e) => setData(prev => ({ 
-                      ...prev, 
-                      whatsapp: e.target.value.replace(/\D/g, '') 
-                    }))}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-              </div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoChange}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <div className="space-y-2">
-                <Label htmlFor="slug">URL Personalizada (Slug)</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                      fornecefy.com/fornecedor/
-                    </span>
+          <TabsContent value="info" className="space-y-6">
+            {/* Basic Info */}
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg">Informações da Empresa</CardTitle>
+                <CardDescription>
+                  Dados básicos que aparecem na sua vitrine
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome da Empresa</Label>
                     <Input
-                      id="slug"
-                      className="pl-[165px]"
-                      value={data.slug || ''}
-                      onChange={(e) => {
-                        const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
-                        setData(prev => ({ ...prev, slug: val }))
-                      }}
-                      placeholder="minha-loja"
+                      id="name"
+                      value={data.name}
+                      onChange={(e) => setData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nome da sua empresa"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp">WhatsApp para Contato</Label>
+                    <Input
+                      id="whatsapp"
+                      value={formatPhoneInput(data.whatsapp)}
+                      onChange={(e) => setData(prev => ({ 
+                        ...prev, 
+                        whatsapp: e.target.value.replace(/\D/g, '') 
+                      }))}
+                      placeholder="(00) 00000-0000"
                     />
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                  Use apenas letras minúsculas, números e hífens.
-                </p>
-              </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="state">Estado</Label>
-                  <Select
-                    value={data.state}
-                    onValueChange={(value) => setData(prev => ({ ...prev, state: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BRAZIL_STATES.map((state) => (
-                        <SelectItem key={state.value} value={state.label}>
-                          {state.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="slug">URL Personalizada (Slug)</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                        fornecefy.com/fornecedor/
+                      </span>
+                      <Input
+                        id="slug"
+                        className="pl-[165px]"
+                        value={data.slug || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                          setData(prev => ({ ...prev, slug: val }))
+                        }}
+                        placeholder="minha-loja"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select
-                    value={data.category}
-                    onValueChange={(value) => setData(prev => ({ ...prev, category: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.name} value={cat.name}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="state">Estado</Label>
+                    <Select
+                      value={data.state}
+                      onValueChange={(value) => setData(prev => ({ ...prev, state: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BRAZIL_STATES.map((state) => (
+                          <SelectItem key={state.value} value={state.label}>
+                            {state.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Categoria</Label>
+                    <Select
+                      value={data.category}
+                      onValueChange={(value) => setData(prev => ({ ...prev, category: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((cat) => (
+                          <SelectItem key={cat.name} value={cat.name}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="minOrder">Pedido Mínimo (R$)</Label>
+                    <Input
+                      id="minOrder"
+                      type="number"
+                      value={data.minOrderValue}
+                      onChange={(e) => setData(prev => ({ 
+                        ...prev, 
+                        minOrderValue: Number(e.target.value) 
+                      }))}
+                      placeholder="0"
+                      min={0}
+                    />
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="video" className="space-y-6">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg">Sobre & Vídeo</CardTitle>
+                <CardDescription>
+                  Conteúdo detalhado para convencer seus compradores
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="minOrder">Pedido Mínimo (R$)</Label>
-                  <Input
-                    id="minOrder"
-                    type="number"
-                    value={data.minOrderValue}
-                    onChange={(e) => setData(prev => ({ 
-                      ...prev, 
-                      minOrderValue: Number(e.target.value) 
-                    }))}
-                    placeholder="0"
-                    min={0}
+                  <Label htmlFor="bio">Sobre a Empresa</Label>
+                  <Textarea
+                    id="bio"
+                    value={data.bio}
+                    onChange={(e) => setData(prev => ({ ...prev, bio: e.target.value }))}
+                    placeholder="Descreva sua empresa, produtos e diferenciais..."
+                    rows={6}
                   />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {(data.bio || '').length}/500 caracteres
+                  </p>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="bio">Sobre a Empresa</Label>
-                <Textarea
-                  id="bio"
-                  value={data.bio}
-                  onChange={(e) => setData(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Descreva sua empresa, produtos e diferenciais..."
-                  rows={4}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {(data.bio || '').length}/500 caracteres
-                </p>
-              </div>
+                <div className="space-y-2 pt-2">
+                  <Label htmlFor="youtube" className="flex items-center gap-2">
+                    <YoutubeIcon className="w-4 h-4 text-red-600" /> 
+                    URL do Vídeo de Apresentação (YouTube)
+                  </Label>
+                  <Input
+                    id="youtube"
+                    value={data.youtubeUrl || ''}
+                    onChange={(e) => setData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                  />
+                  {data.youtubeUrl && getYoutubeEmbedUrl(data.youtubeUrl) && (
+                    <div className="mt-4 aspect-video rounded-xl bg-black overflow-hidden border border-border">
+                      <iframe
+                        className="w-full h-full"
+                        src={getYoutubeEmbedUrl(data.youtubeUrl) || ''}
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <div className="space-y-2 pt-2">
-                <Label htmlFor="youtube" className="flex items-center gap-2">
-                  <Save className="w-4 h-4 text-red-600" /> 
-                  URL do Vídeo de Apresentação (YouTube)
-                </Label>
-                <Input
-                  id="youtube"
-                  value={data.youtubeUrl || ''}
-                  onChange={(e) => setData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  Cole o link completo do vídeo que apresenta sua empresa ou seus produtos.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="security" className="space-y-6">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg">Segurança da Conta</CardTitle>
+                <CardDescription>
+                  Atualize sua senha de acesso ao painel
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordUpdate} className="space-y-4 max-w-md">
+                  {passwordError && (
+                    <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                      {passwordError}
+                    </div>
+                  )}
+                  {passwordSuccess && (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-600 text-sm">
+                      {passwordSuccess}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">Nova Senha</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repita a nova senha"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={isUpdatingPassword || !newPassword}
+                    className="w-full"
+                  >
+                    {isUpdatingPassword ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Lock className="w-4 h-4 mr-2" />
+                    )}
+                    Atualizar Senha
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   )

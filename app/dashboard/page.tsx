@@ -33,11 +33,11 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 const navItems = [
-  { id: 'vitrine', label: 'Vitrine', icon: Store },
+  { id: 'vitrine', label: 'Editar Perfil', icon: User },
   { id: 'produtos', label: 'Produtos', icon: Package },
   { id: 'leads', label: 'Leads', icon: Users },
   { id: 'following', label: 'Lojas que Sigo', icon: Store },
-  { id: 'perfil', label: 'Perfil', icon: User },
+  { id: 'perfil', label: 'Ver Perfil', icon: Eye },
   { id: 'plano', label: 'Plano', icon: CreditCard },
 ]
 

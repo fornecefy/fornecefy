@@ -20,7 +20,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { supabase } from '@/lib/supabase'
+import { Lock, Layout, MapPin as MapPinIcon, ShieldCheck } from 'lucide-react'
 
 import { BRAZIL_STATES } from '@/lib/constants'
 
@@ -47,8 +49,15 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
     status: 'approved',
     logo: '',
     verified: false,
-    description: ''
+    description: '',
+    user_id: ''
   })
+
+  // Password change state (for Admin)
+  const [adminNewPassword, setAdminNewPassword] = useState('')
+  const [isAdminUpdatingPassword, setIsAdminUpdatingPassword] = useState(false)
+  const [adminPasswordError, setAdminPasswordError] = useState('')
+  const [adminPasswordSuccess, setAdminPasswordSuccess] = useState('')
 
   useEffect(() => {
     if (supplierId) {
@@ -78,7 +87,8 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
           status: data.status || 'approved',
           logo: data.company_logo_url || '',
           verified: data.verified || false,
-          description: data.description || ''
+          description: data.description || '',
+          user_id: data.user_id || ''
         })
       }
     } catch (err: any) {
@@ -172,6 +182,38 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
     }
   }
 
+  const handleAdminPasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!adminNewPassword || adminNewPassword.length < 6) {
+      setAdminPasswordError('A senha deve ter pelo menos 6 caracteres.')
+      return
+    }
+
+    setIsAdminUpdatingPassword(true)
+    setAdminPasswordError('')
+    setAdminPasswordSuccess('')
+
+    try {
+      const res = await fetch('/api/admin/update-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: formData.user_id, 
+          newPassword: adminNewPassword 
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao atualizar senha')
+      
+      setAdminPasswordSuccess('Senha do fornecedor atualizada com sucesso!')
+      setAdminNewPassword('')
+    } catch (err: any) {
+      setAdminPasswordError(err.message)
+    } finally {
+      setIsAdminUpdatingPassword(false)
+    }
+  }
+
   if (isFetching) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -201,65 +243,83 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-12">
-          {/* Logo Section */}
-          <div className="flex flex-col items-center gap-4">
-            <Label className="text-base font-bold">Logotipo da Empresa</Label>
-            <div className="relative w-48 h-48 rounded-2xl border-4 border-dashed border-muted-foreground/10 flex items-center justify-center overflow-hidden bg-muted hover:border-primary/40 transition-all cursor-pointer group">
-              {formData.logo_url ? (
-                <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <Building2 className="w-12 h-12 text-muted-foreground" />
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                CLIQUE PARA ALTERAR
-              </div>
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleUpload} />
-              {uploadingLogo && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-white" />
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">Recomendado: 400x400px (PNG ou JPG)</p>
-          </div>
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="general" className="rounded-lg gap-2">
+              <Layout className="w-4 h-4" /> Dados Gerais
+            </TabsTrigger>
+            <TabsTrigger value="plan" className="rounded-lg gap-2">
+              <MapPinIcon className="w-4 h-4" /> Endereço & Plano
+            </TabsTrigger>
+            <TabsTrigger value="security" className="rounded-lg gap-2">
+              <Lock className="w-4 h-4" /> Segurança
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Info Section */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <Label htmlFor="name" className="text-base font-bold">Nome do Responsável</Label>
-                <div className="relative">
-                  <Input id="name" className="pl-10 h-12" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
-                  <Mail className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+          <TabsContent value="general" className="space-y-10">
+            <div className="grid lg:grid-cols-3 gap-12">
+              {/* Logo Section */}
+              <div className="flex flex-col items-center gap-4">
+                <Label className="text-base font-bold">Logotipo da Empresa</Label>
+                <div className="relative w-48 h-48 rounded-2xl border-4 border-dashed border-muted-foreground/10 flex items-center justify-center overflow-hidden bg-muted hover:border-primary/40 transition-all cursor-pointer group">
+                  {formData.logo ? (
+                    <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 className="w-12 h-12 text-muted-foreground" />
+                  )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
+                    CLIQUE PARA ALTERAR
+                  </div>
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleUpload} />
+                  {uploadingLogo && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-white" />
+                    </div>
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground">Recomendado: 400x400px (PNG ou JPG)</p>
               </div>
-              <div className="space-y-3">
-                <Label htmlFor="company" className="text-base font-bold">Nome da Empresa</Label>
-                <div className="relative">
-                  <Input id="company" className="pl-10 h-12" value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} required />
-                  <Building2 className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+
+              {/* Info Section */}
+              <div className="lg:col-span-2 space-y-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="name" className="text-base font-bold">Nome do Responsável</Label>
+                    <div className="relative">
+                      <Input id="name" className="pl-10 h-12" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                      <Mail className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="trade_name" className="text-base font-bold">Nome da Empresa</Label>
+                    <div className="relative">
+                      <Input id="trade_name" className="pl-10 h-12" value={formData.trade_name} onChange={e => setFormData({...formData, trade_name: e.target.value})} required />
+                      <Building2 className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="email" className="text-base font-bold">E-mail</Label>
+                    <div className="relative">
+                      <Input id="email" className="pl-10 h-12" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} readOnly={!!supplierId} />
+                      <Mail className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="whatsapp" className="text-base font-bold">Telefone / WhatsApp</Label>
+                    <div className="relative">
+                      <Input id="whatsapp" className="pl-10 h-12" value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} />
+                      <Phone className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          </TabsContent>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <Label htmlFor="cnpj" className="text-base font-bold">CNPJ</Label>
-                <div className="relative">
-                  <Input id="cnpj" className="pl-10 h-12" value={formData.cnpj} onChange={e => setFormData({...formData, cnpj: e.target.value})} />
-                  <FileText className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="phone" className="text-base font-bold">Telefone / WhatsApp</Label>
-                <div className="relative">
-                  <Input id="phone" className="pl-10 h-12" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                  <Phone className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-            </div>
-
+          <TabsContent value="plan" className="space-y-10">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-3">
                 <Label className="text-base font-bold">Estado</Label>
@@ -269,7 +329,7 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
                   </SelectTrigger>
                   <SelectContent>
                     {BRAZIL_STATES.map(state => (
-                      <SelectItem key={state.value} value={state.value}>{state.label}</SelectItem>
+                      <SelectItem key={state.value} value={state.label}>{state.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -311,8 +371,62 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
                 <p className="text-muted-foreground">Exibe o selo de confiança e prioriza o fornecedor nas buscas.</p>
               </div>
             </div>
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="security" className="space-y-10">
+            <Card className="border-none shadow-none bg-muted/20">
+              <CardHeader>
+                <CardTitle className="text-lg">Redefinir Senha do Fornecedor</CardTitle>
+                <CardDescription>Como administrador, você pode forçar uma nova senha para este usuário.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-w-md space-y-4">
+                  {adminPasswordError && (
+                    <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      {adminPasswordError}
+                    </div>
+                  )}
+                  {adminPasswordSuccess && (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-600 text-sm flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {adminPasswordSuccess}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-new-password">Nova Senha Temporária</Label>
+                    <Input
+                      id="admin-new-password"
+                      type="password"
+                      value={adminNewPassword}
+                      onChange={(e) => setAdminNewPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="h-12"
+                    />
+                  </div>
+                  <Button 
+                    type="button" 
+                    onClick={handleAdminPasswordUpdate}
+                    disabled={isAdminUpdatingPassword || !adminNewPassword || !formData.user_id}
+                    className="w-full h-12"
+                  >
+                    {isAdminUpdatingPassword ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                    )}
+                    Redefinir Senha Agora
+                  </Button>
+                  {!formData.user_id && (
+                    <p className="text-[10px] text-destructive font-medium italic">
+                      * Este fornecedor não possui um ID de usuário vinculado no banco de dados.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <div className="flex justify-end gap-4 pt-8 border-t-2">
           <Button type="button" variant="ghost" size="lg" onClick={onClose}>Cancelar</Button>

@@ -25,8 +25,27 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
+import { 
+  Package, 
+  Truck, 
+  Layers, 
+  Settings2, 
+  Tag, 
+  Info, 
+  Youtube as YoutubeIcon,
+  Box,
+  Ruler,
+  Boxes
+} from 'lucide-react'
 
 import { CATEGORIES } from '@/lib/constants'
 
@@ -59,8 +78,23 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
     sku: '',
     videoUrl: '',
     modalities: ['Atacado'] as string[],
-    supplier_id: initialSupplierId || user?.id
+    supplier_id: initialSupplierId || user?.id,
+    
+    // New Fields
+    has_stock_control: false,
+    stock_quantity: '0',
+    weight: '',
+    height: '',
+    width: '',
+    depth: '',
+    shipping_type: 'Correios',
+    collections: [] as string[],
+    variations: [] as { name: string, values: string[] }[]
   })
+
+  const [newCollection, setNewCollection] = useState('')
+  const [variationName, setVariationName] = useState('')
+  const [variationValues, setVariationValues] = useState('')
 
   const selectedCategoryData = CATEGORIES.find(c => c.name === formData.category)
 
@@ -96,7 +130,16 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
           sku: data.sku || '',
           videoUrl: data.video_url || '',
           modalities: data.modalities || ['Atacado'],
-          supplier_id: data.supplier_id
+          supplier_id: data.supplier_id,
+          has_stock_control: data.has_stock_control || false,
+          stock_quantity: data.stock_quantity?.toString() || '0',
+          weight: data.weight || '',
+          height: data.height || '',
+          width: data.width || '',
+          depth: data.depth || '',
+          shipping_type: data.shipping_type || 'Correios',
+          collections: data.collections || [],
+          variations: data.variations || []
         })
       }
     } catch (err: any) {
@@ -188,7 +231,16 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
         video_url: formData.videoUrl,
         supplier_id: formData.supplier_id,
         modalities: formData.modalities,
-        status: 'active'
+        status: 'active',
+        has_stock_control: formData.has_stock_control,
+        stock_quantity: formData.has_stock_control ? parseInt(formData.stock_quantity) : null,
+        weight: formData.weight,
+        height: formData.height,
+        width: formData.width,
+        depth: formData.depth,
+        shipping_type: formData.shipping_type,
+        collections: formData.collections,
+        variations: formData.variations
       }
 
       if (productId) {
@@ -242,88 +294,48 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
           </div>
         )}
 
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Left Column: Images */}
-          <div className="space-y-8">
-            <div>
-              <Label className="text-base font-bold mb-4 block">Imagem Principal</Label>
-              {formData.image ? (
-                <div className="relative aspect-square rounded-2xl overflow-hidden border-2 bg-muted shadow-inner group">
-                  <img src={formData.image} alt="Preview" className="w-full h-full object-contain" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
-                      size="lg" 
-                      className="gap-2"
-                      onClick={() => handleDeleteImage(formData.image)}
-                    >
-                      <Trash2 className="w-5 h-5" />
-                      Remover Foto
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center aspect-square rounded-2xl border-4 border-dashed border-muted-foreground/10 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group">
-                  {uploadingImage ? (
-                    <div className="text-center">
-                      <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-2" />
-                      <span className="text-sm font-medium">Subindo imagem...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <Upload className="w-10 h-10 text-primary" />
-                      </div>
-                      <span className="text-lg font-bold">Upload da Foto</span>
-                      <span className="text-sm text-muted-foreground mt-1">Arraste ou clique para selecionar</span>
-                      <span className="text-[11px] text-muted-foreground/50 mt-4 px-4 py-1 bg-muted rounded-full uppercase tracking-wider font-semibold">JPG, PNG ou WebP • Máx 1MB</span>
-                    </>
-                  )}
-                  <input type="file" className="hidden" accept="image/*" onChange={handleUpload} />
-                </label>
-              )}
-            </div>
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-8 h-12 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="basic" className="rounded-lg gap-2">
+              <Info className="w-4 h-4" /> Básicos
+            </TabsTrigger>
+            <TabsTrigger value="media" className="rounded-lg gap-2">
+              <ImageIcon className="w-4 h-4" /> Mídia
+            </TabsTrigger>
+            <TabsTrigger value="pricing" className="rounded-lg gap-2">
+              <Tag className="w-4 h-4" /> Preços & Estoque
+            </TabsTrigger>
+            <TabsTrigger value="logistics" className="rounded-lg gap-2">
+              <Truck className="w-4 h-4" /> Logística
+            </TabsTrigger>
+            <TabsTrigger value="variations" className="rounded-lg gap-2">
+              <Layers className="w-4 h-4" /> Variações
+            </TabsTrigger>
+          </TabsList>
 
-            <div>
-              <Label className="text-base font-bold mb-4 block">Fotos Adicionais (Até 4)</Label>
-              <div className="grid grid-cols-4 gap-4">
-                {formData.gallery.map((url, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border bg-muted shadow-sm group">
-                    <img src={url} alt="" className="w-full h-full object-cover" />
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
-                      size="icon" 
-                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleDeleteImage(url, true)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-                {formData.gallery.length < 4 && (
-                  <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer">
-                    <Plus className="w-6 h-6 text-muted-foreground" />
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUpload(e, true)} />
-                  </label>
-                )}
+          <TabsContent value="basic" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="name" className="text-base font-bold">Nome do Produto</Label>
+                <Input 
+                  id="name" 
+                  placeholder="Ex: Camiseta Oversized Premium"
+                  className="h-12 text-lg"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                />
               </div>
-            </div>
-          </div>
-
-          {/* Right Column: Info */}
-          <div className="space-y-8">
-            <div className="space-y-3">
-              <Label htmlFor="name" className="text-base font-bold">Nome do Produto</Label>
-              <Input 
-                id="name" 
-                placeholder="Ex: Camiseta Oversized Premium"
-                className="h-12 text-lg"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                required
-              />
+              <div className="space-y-3">
+                <Label htmlFor="sku" className="text-base font-bold">Código SKU / Referência</Label>
+                <Input 
+                  id="sku" 
+                  placeholder="Ex: MOD-123-PRETO"
+                  className="h-12"
+                  value={formData.sku}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-6">
@@ -359,7 +371,141 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="space-y-3">
+              <Label htmlFor="desc" className="text-base font-bold">Descrição Completa</Label>
+              <Textarea 
+                id="desc" 
+                rows={8} 
+                className="resize-none"
+                placeholder="Descreva materiais, cores, tamanhos e diferenciais..."
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-base font-bold">Coleções / Tags</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Ex: Inverno 2024, Promoção..." 
+                  value={newCollection}
+                  onChange={(e) => setNewCollection(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (newCollection.trim()) {
+                        setFormData(prev => ({ ...prev, collections: [...prev.collections, newCollection.trim()] }))
+                        setNewCollection('')
+                      }
+                    }
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => {
+                    if (newCollection.trim()) {
+                      setFormData(prev => ({ ...prev, collections: [...prev.collections, newCollection.trim()] }))
+                      setNewCollection('')
+                    }
+                  }}
+                >
+                  Adicionar
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formData.collections.map((tag, idx) => (
+                  <Badge key={idx} variant="secondary" className="gap-1 px-3 py-1">
+                    {tag}
+                    <X 
+                      className="w-3 h-3 cursor-pointer hover:text-destructive" 
+                      onClick={() => setFormData(prev => ({ ...prev, collections: prev.collections.filter((_, i) => i !== idx) }))}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="media" className="space-y-8">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <Label className="text-base font-bold mb-4 block">Imagem de Capa</Label>
+                {formData.image ? (
+                  <div className="relative aspect-square rounded-2xl overflow-hidden border-2 bg-muted shadow-inner group">
+                    <img src={formData.image} alt="Preview" className="w-full h-full object-contain" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        size="lg" 
+                        className="gap-2"
+                        onClick={() => handleDeleteImage(formData.image)}
+                      >
+                        <Trash2 className="w-5 h-5" />
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center aspect-square rounded-2xl border-4 border-dashed border-muted-foreground/10 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group">
+                    {uploadingImage ? (
+                      <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                    ) : (
+                      <>
+                        <Upload className="w-10 h-10 text-primary mb-4" />
+                        <span className="font-bold">Upload Principal</span>
+                      </>
+                    )}
+                    <input type="file" className="hidden" accept="image/*" onChange={handleUpload} />
+                  </label>
+                )}
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-base font-bold mb-4 block">Galeria de Fotos (Até 4)</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {formData.gallery.map((url, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border bg-muted group">
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          size="icon" 
+                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                          onClick={() => handleDeleteImage(url, true)}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    {formData.gallery.length < 4 && (
+                      <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 cursor-pointer">
+                        <Plus className="w-6 h-6 text-muted-foreground" />
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUpload(e, true)} />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="video" className="text-base font-bold flex items-center gap-2">
+                    <YoutubeIcon className="w-4 h-4 text-red-600" /> URL do Vídeo (YouTube)
+                  </Label>
+                  <Input 
+                    id="video" 
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="pricing" className="space-y-8">
+            <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-3">
                 <Label htmlFor="wholesale" className="text-base font-bold">Preço Atacado</Label>
                 <div className="relative">
@@ -392,54 +538,228 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
                 </div>
               </div>
               <div className="space-y-3">
-                <Label htmlFor="min" className="text-base font-bold">Qtd Mínima</Label>
-                <Input 
-                  id="min" 
-                  type="number"
-                  className="h-12"
-                  value={formData.minQuantity}
-                  onChange={(e) => setFormData(prev => ({ ...prev, minQuantity: e.target.value }))}
-                  required
-                />
+                <Label htmlFor="dropshipping" className="text-base font-bold">Preço Dropshipping</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-muted-foreground font-medium text-sm">R$</span>
+                  <Input 
+                    id="dropshipping" 
+                    type="number" 
+                    step="0.01"
+                    className="pl-10 h-12"
+                    placeholder="0,00"
+                    value={formData.dropshippingPrice}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dropshippingPrice: e.target.value }))}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <Label htmlFor="sku" className="text-base font-bold">Código SKU / Referência</Label>
-              <Input 
-                id="sku" 
-                placeholder="Ex: MOD-123-PRETO"
-                className="h-12"
-                value={formData.sku}
-                onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="desc" className="text-base font-bold">Descrição do Produto</Label>
-              <Textarea 
-                id="desc" 
-                rows={6} 
-                className="resize-none"
-                placeholder="Descreva materiais, cores, tamanhos e diferenciais..."
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-6 bg-muted/20 rounded-2xl border-2 border-dashed">
-              <div className="space-y-1">
-                <Label className="text-base font-bold">Disponibilidade Imediata?</Label>
-                <p className="text-sm text-muted-foreground">O produto está pronto para envio (Pronta Entrega)</p>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="p-6 bg-muted/20 rounded-2xl border-2 border-dashed space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label className="text-base font-bold">Controle de Estoque</Label>
+                    <p className="text-xs text-muted-foreground">Gerenciar quantidade disponível automaticamente</p>
+                  </div>
+                  <Switch 
+                    checked={formData.has_stock_control} 
+                    onCheckedChange={(v) => setFormData(prev => ({ ...prev, has_stock_control: v }))} 
+                  />
+                </div>
+                {formData.has_stock_control && (
+                  <div className="space-y-2 pt-2 animate-in slide-in-from-top-2 duration-300">
+                    <Label htmlFor="stock">Quantidade em Estoque</Label>
+                    <div className="flex items-center gap-3">
+                      <Box className="w-5 h-5 text-muted-foreground" />
+                      <Input 
+                        id="stock" 
+                        type="number" 
+                        className="h-10 w-32"
+                        value={formData.stock_quantity}
+                        onChange={(e) => setFormData(prev => ({ ...prev, stock_quantity: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-              <Switch 
-                checked={formData.readyToShip} 
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, readyToShip: checked }))} 
-                className="data-[state=checked]:bg-primary"
-              />
+
+              <div className="space-y-4">
+                <Label htmlFor="min" className="text-base font-bold">Pedido Mínimo (Unidades)</Label>
+                <div className="flex items-center gap-3">
+                  <Package className="w-5 h-5 text-muted-foreground" />
+                  <Input 
+                    id="min" 
+                    type="number"
+                    className="h-12 w-32"
+                    value={formData.minQuantity}
+                    onChange={(e) => setFormData(prev => ({ ...prev, minQuantity: e.target.value }))}
+                    required
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground italic">* Quantidade mínima por pedido deste produto no atacado.</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="logistics" className="space-y-8">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-base font-bold">Tipo de Entrega</Label>
+                  <Select value={formData.shipping_type} onValueChange={(v) => setFormData(prev => ({ ...prev, shipping_type: v }))}>
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Correios">Correios (PAC/SEDEX)</SelectItem>
+                      <SelectItem value="Transportadora">Transportadora</SelectItem>
+                      <SelectItem value="Retirada">Retirada em Mãos</SelectItem>
+                      <SelectItem value="Proprio">Frota Própria</SelectItem>
+                      <SelectItem value="Digital">Produto Digital (Download/E-mail)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-primary/5 rounded-2xl border border-primary/20">
+                  <div className="space-y-1">
+                    <Label className="text-base font-bold text-primary">Pronta Entrega?</Label>
+                    <p className="text-xs text-muted-foreground">Produto disponível para envio imediato</p>
+                  </div>
+                  <Switch 
+                    checked={formData.readyToShip} 
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, readyToShip: checked }))} 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-6 p-6 bg-muted/20 rounded-2xl border">
+                <Label className="text-base font-bold flex items-center gap-2">
+                  <Ruler className="w-5 h-5" /> Peso & Dimensões (Opcional)
+                </Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Peso (kg)</Label>
+                    <Input 
+                      type="number" 
+                      step="0.001" 
+                      placeholder="0.500" 
+                      value={formData.weight}
+                      onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Altura (cm)</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="10" 
+                      value={formData.height}
+                      onChange={(e) => setFormData(prev => ({ ...prev, height: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Largura (cm)</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="20" 
+                      value={formData.width}
+                      onChange={(e) => setFormData(prev => ({ ...prev, width: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Profundidade (cm)</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="30" 
+                      value={formData.depth}
+                      onChange={(e) => setFormData(prev => ({ ...prev, depth: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-50">Dados usados para cálculo de frete automático</p>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="variations" className="space-y-8">
+            <Card className="border-2 border-dashed bg-muted/10">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Boxes className="w-5 h-5" /> Configurar Variações
+                </CardTitle>
+                <CardDescription>Adicione cores, tamanhos ou outros atributos ao seu produto</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-4 items-end">
+                  <div className="space-y-2">
+                    <Label>Atributo (Ex: Cor, Tamanho)</Label>
+                    <Input 
+                      placeholder="Ex: Cor" 
+                      value={variationName}
+                      onChange={(e) => setVariationName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Valores (Separados por vírgula)</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Ex: Azul, Vermelho, Preto" 
+                        value={variationValues}
+                        onChange={(e) => setVariationValues(e.target.value)}
+                      />
+                      <Button 
+                        type="button"
+                        onClick={() => {
+                          if (variationName && variationValues) {
+                            const values = variationValues.split(',').map(v => v.trim()).filter(Boolean)
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              variations: [...prev.variations, { name: variationName, values }] 
+                            }))
+                            setVariationName('')
+                            setVariationValues('')
+                          }
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {formData.variations.map((v, idx) => (
+                    <div key={idx} className="p-4 bg-background border rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-primary mr-2">{v.name}:</span>
+                        <span className="text-muted-foreground">{v.values.join(', ')}</span>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive"
+                        onClick={() => setFormData(prev => ({ 
+                          ...prev, 
+                          variations: prev.variations.filter((_, i) => i !== idx) 
+                        }))}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {formData.variations.length > 0 && (
+                  <div className="p-4 bg-accent/5 border border-accent/20 rounded-xl">
+                    <p className="text-sm text-accent font-medium">
+                      💡 Foram detectadas {formData.variations.length} tipos de variações. Os compradores poderão escolher estas opções na vitrine.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <div className="flex justify-end gap-4 pt-8 border-t-2">
           <Button type="button" variant="ghost" size="lg" onClick={onClose}>Cancelar e Voltar</Button>

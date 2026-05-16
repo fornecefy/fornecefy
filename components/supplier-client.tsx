@@ -158,7 +158,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
         
         <div className="container relative h-full mx-auto px-4">
           <Link 

@@ -78,6 +78,12 @@ export default function MasterAdminPage() {
   })
   const [isSavingSettings, setIsSavingSettings] = useReactState(false)
 
+  // Admin password change state
+  const [adminNewSelfPassword, setAdminNewSelfPassword] = useReactState('')
+  const [isAdminUpdatingSelfPassword, setIsAdminUpdatingSelfPassword] = useReactState(false)
+  const [adminSelfPasswordError, setAdminSelfPasswordError] = useReactState('')
+  const [adminSelfPasswordSuccess, setAdminSelfPasswordSuccess] = useReactState('')
+
   const MASTER_EMAIL = 'fornecefy@gmail.com'
   useEffect(() => {
     console.log('MasterAdmin useEffect:', { isAuthLoading, user: user?.email, isAuthorized })
@@ -202,6 +208,29 @@ export default function MasterAdminPage() {
       alert('Erro ao carregar dados do banco: ' + (err.message || 'Erro desconhecido'))
     } finally {
       setIsLoadingData(false)
+    }
+  }
+
+  const handleAdminSelfPasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!adminNewSelfPassword || adminNewSelfPassword.length < 6) {
+      setAdminSelfPasswordError('A senha deve ter pelo menos 6 caracteres.')
+      return
+    }
+
+    setIsAdminUpdatingSelfPassword(true)
+    setAdminSelfPasswordError('')
+    setAdminSelfPasswordSuccess('')
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: adminNewSelfPassword })
+      if (error) throw error
+      setAdminSelfPasswordSuccess('Sua senha de administrador foi atualizada!')
+      setAdminNewSelfPassword('')
+    } catch (err: any) {
+      setAdminSelfPasswordError(err.message)
+    } finally {
+      setIsAdminUpdatingSelfPassword(false)
     }
   }
 
@@ -887,6 +916,49 @@ export default function MasterAdminPage() {
                     </div>
                     <Switch />
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm h-fit">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-primary" />
+                    <CardTitle>Minha Segurança</CardTitle>
+                  </div>
+                  <CardDescription>Altere sua senha de acesso ao Master Admin</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleAdminSelfPasswordUpdate} className="space-y-4">
+                    {adminSelfPasswordError && (
+                      <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                        {adminSelfPasswordError}
+                      </div>
+                    )}
+                    {adminSelfPasswordSuccess && (
+                      <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-600 text-sm">
+                        {adminSelfPasswordSuccess}
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-self-password">Nova Senha Master</Label>
+                      <Input
+                        id="admin-self-password"
+                        type="password"
+                        value={adminNewSelfPassword}
+                        onChange={(e) => setAdminNewSelfPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="h-12 rounded-xl"
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      disabled={isAdminUpdatingSelfPassword || !adminNewSelfPassword}
+                      className="w-full h-12 rounded-xl gap-2 font-bold"
+                    >
+                      {isAdminUpdatingSelfPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                      Atualizar Minha Senha
+                    </Button>
+                  </form>
                 </CardContent>
               </Card>
             </div>

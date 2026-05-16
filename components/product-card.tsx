@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { BadgeCheck, Truck, Heart, Store } from 'lucide-react'
+import { BadgeCheck, Truck, Store } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -85,14 +85,7 @@ export function ProductCard({ product, variant = 'default', showActions = true }
               Pronta Entrega
             </Badge>
           )}
-          <Button
-            size="icon"
-            variant="secondary"
-            className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-10px] group-hover:translate-y-0"
-            onClick={handleToggleFavorite}
-          >
-            <Heart className={`w-4.5 h-4.5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
-          </Button>
+
         </div>
         
         <CardContent className="p-4 flex-1 flex flex-col">
