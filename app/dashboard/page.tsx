@@ -154,6 +154,13 @@ export default function DashboardPage() {
         youtube_video_url: formData.youtubeUrl,
       }
 
+      // Se for o super admin, libera todos os privilégios (vitrine liberada)
+      if (user?.email === 'fornecefy@gmail.com') {
+        extraFields.verified = true
+        extraFields.plan = 'Elite'
+        extraFields.status = 'approved'
+      }
+
       let error;
       if (currentSupplier && currentSupplier.id) {
         // Atualiza se já existe
