@@ -159,6 +159,14 @@ export default function ProductClient({ productId }: { productId: string }) {
   const isFavorite = isFavoriteProduct(product.id)
   const totalPrice = currentPrice * quantity
 
+  const handleFavorite = () => {
+    if (!user) {
+      router.push(`/login?redirect=/produto/${productId}`)
+      return
+    }
+    toggleFavoriteProduct(product.id)
+  }
+
   const handleAddToCart = () => {
     addItem(product, quantity)
     setAddedToCart(true)
@@ -241,7 +249,7 @@ export default function ProductClient({ productId }: { productId: string }) {
                     variant="secondary"
                     size="icon"
                     className="rounded-full bg-white/90 hover:bg-white shadow-sm"
-                    onClick={() => toggleFavoriteProduct(product.id)}
+                    onClick={handleFavorite}
                   >
                     <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
                   </Button>
@@ -420,7 +428,7 @@ export default function ProductClient({ productId }: { productId: string }) {
                       alt={supplier.name}
                       width={56}
                       height={56}
-                      className="rounded-lg object-cover"
+                      className="rounded-full object-cover"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

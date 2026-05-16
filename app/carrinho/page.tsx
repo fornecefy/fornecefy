@@ -4,6 +4,8 @@ import { useState } from 'react'
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import {
   ArrowLeft,
   Minus,
@@ -26,9 +28,18 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Header } from '@/components/header'
 import { CartProvider, useCart } from '@/lib/cart-context'
+import { useAuth } from '@/lib/auth-context'
 import { suppliers, formatCurrency } from '@/lib/data'
 
 function CartContent() {
+  const router = useRouter()
+  const { user, isLoading: isAuthLoading } = useAuth()
+  
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      router.push('/login?redirect=/carrinho')
+    }
+  }, [user, isAuthLoading, router])
   const {
     items,
     removeItem,
@@ -73,6 +84,17 @@ function CartContent() {
   const allMinOrdersMet = Array.from(groupedItems.keys()).every((supplierId) =>
     isMinOrderMet(supplierId)
   )
+
+  if (isAuthLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center p-4 py-8">
+          <div className="animate-pulse w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto" />
+        </main>
+      </div>
+    )
+  }
 
   if (items.length === 0) {
     return (

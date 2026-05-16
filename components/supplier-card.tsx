@@ -26,7 +26,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
         </div>
         <CardContent className="p-5 relative">
           <div className="absolute -top-10 left-5">
-            <div className="w-16 h-16 rounded-2xl border-4 border-card overflow-hidden bg-card shadow-xl transition-transform group-hover:scale-105 duration-300">
+            <div className="w-16 h-16 rounded-full border-4 border-card overflow-hidden bg-card shadow-xl transition-transform group-hover:scale-105 duration-300">
               <Image
                 src={supplier.logo}
                 alt={supplier.name}

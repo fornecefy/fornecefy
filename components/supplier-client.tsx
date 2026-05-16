@@ -13,6 +13,9 @@ import { ProductCard } from '@/components/product-card'
 import { Input } from '@/components/ui/input'
 import { formatCurrency } from '@/lib/data'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
 
 export default function SupplierClient({ supplierId }: { supplierId: string }) {
   const [supplier, setSupplier] = useState<any>(null)
@@ -21,6 +24,8 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isFollowing, setIsFollowing] = useState(false)
+  const { user } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchSupplierData() {
@@ -94,6 +99,12 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
     }
   }, [searchTerm, supplierProducts])
 
+  const categories = useMemo(() => {
+    if (!supplierProducts) return []
+    const cats = new Set(supplierProducts.map(p => p.category).filter(Boolean))
+    return Array.from(cats).sort()
+  }, [supplierProducts])
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -131,6 +142,10 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
   }
 
   const handleFollow = () => {
+    if (!user) {
+      router.push(`/login?redirect=/fornecedor/${supplierId}`)
+      return
+    }
     setIsFollowing(!isFollowing)
     // Aqui viria a lógica de salvar no banco
   }
@@ -179,7 +194,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
               <div className="flex flex-col md:flex-row items-center gap-5 p-6">
                 {/* Logo */}
                 <div className="relative shrink-0 -mt-16 md:-mt-0">
-                  <div className="w-24 h-24 rounded-2xl border-4 border-card bg-card shadow-lg overflow-hidden">
+                  <div className="w-24 h-24 rounded-full border-4 border-card bg-card shadow-lg overflow-hidden">
                     <Image
                       src={supplier.logo || '/placeholder-logo.png'}
                       alt={supplier.name}
@@ -187,18 +202,16 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
                       className="object-cover"
                     />
                   </div>
-                  {supplier.verified && (
-                    <div className="absolute -bottom-1 -right-1 bg-primary text-white p-1 rounded-full shadow-lg border-2 border-card z-20">
-                      <BadgeCheck className="w-3.5 h-3.5" />
-                    </div>
-                  )}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 text-center md:text-left min-w-0">
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 mb-1.5">
-                    <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight">
+                    <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
                       {supplier.name}
+                      {supplier.verified && (
+                        <BadgeCheck className="w-5 h-5 text-blue-500 shrink-0" />
+                      )}
                     </h1>
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] uppercase font-bold px-2.5 py-0.5">
                       {supplier.category}
@@ -261,14 +274,21 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
                 <Share2 className="w-4 h-4" />
                 Compartilhar Catálogo
               </Button>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium px-4 py-2 bg-muted/30 rounded-xl border border-border/40">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                Fornecedor verificado e ativo
-              </div>
             </div>
           </div>
 
           <TabsContent value="produtos" className="mt-0">
+            {/* Categories */}
+            {categories.length > 0 && (
+              <div className="mb-6 flex flex-wrap gap-2">
+                {categories.map((cat, idx) => (
+                  <Badge key={idx} variant="outline" className="rounded-full bg-card px-4 py-1.5 text-xs font-semibold">
+                    {cat}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
             {/* Filters and Search */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">
               <div className="relative flex-1">
