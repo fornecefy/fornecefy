@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
-            .single()
+            .maybeSingle()
           
           if (profile) {
             console.log('AuthContext: Perfil carregado com sucesso:', profile.type)
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .from('suppliers')
               .select('name')
               .eq('user_id', session.user.id)
-              .single()
+              .maybeSingle()
 
             if (supplierProfile) {
               setUser({
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single()
+          .maybeSingle()
         
         if (profile) {
           setUser({
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .from('suppliers')
             .select('name')
             .eq('user_id', session.user.id)
-            .single()
+            .maybeSingle()
 
           if (supplierProfile) {
             setUser({
@@ -175,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .from('profiles')
           .select('*')
           .eq('id', data.user.id)
-          .single()
+          .maybeSingle()
         
         if (profile) {
           const userData: User = {
@@ -196,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .from('suppliers')
             .select('name')
             .eq('user_id', data.user.id)
-            .single()
+            .maybeSingle()
 
           if (supplierProfile) {
             setUser({

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from 'react'
-import { ChevronRight, Store, Package } from 'lucide-react'
+import { ChevronRight, Store, Package, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Header } from './header'
 import { Footer } from './footer'
@@ -31,12 +31,15 @@ export function Marketplace() {
 
   const [realSuppliers, setRealSuppliers] = useState<Supplier[]>([])
   const [realProducts, setRealProducts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch Fornecedores
-      const data = await getSuppliers()
-      setRealSuppliers(data)
+      setIsLoading(true)
+      try {
+        // Fetch Fornecedores
+        const data = await getSuppliers()
+        setRealSuppliers(data)
       
       // Fetch Produtos
       const { data: prods } = await supabase
@@ -60,6 +63,11 @@ export function Marketplace() {
           modalities: p.modalities || ['Atacado'],
         }))
         setRealProducts(formattedProds)
+      }
+      } catch (err) {
+        console.error('Error fetching marketplace data:', err)
+      } finally {
+        setIsLoading(false)
       }
     }
     fetchData()
@@ -163,7 +171,12 @@ export function Marketplace() {
         {isSearching && <FiltersSidebar filters={filters} onFiltersChange={setFilters} />}
         
         <main className="flex-1">
-        {isSearching ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-32 space-y-4">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <p className="text-muted-foreground font-medium animate-pulse">Carregando o marketplace...</p>
+          </div>
+        ) : isSearching ? (
           <div className="space-y-6">
             {/* Search Results Header */}
             <div className="flex items-center justify-between">
