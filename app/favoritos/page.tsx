@@ -11,7 +11,11 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
 import { useFavorites } from '@/lib/favorites-context'
-import { products, suppliers, formatCurrency } from '@/lib/data'
+import { formatCurrency } from '@/lib/data'
+import { supabase } from '@/lib/supabase'
+import { getSuppliers } from '@/lib/services/supplier-service'
+import { useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 
 export default function FavoritosPage() {
   const { 
@@ -23,11 +27,48 @@ export default function FavoritosPage() {
     getFavoriteSuppliersCount
   } = useFavorites()
 
-  const favoriteProductsList = products.filter(p => favoriteProducts.includes(p.id))
-  const favoriteSuppliersList = suppliers.filter(s => favoriteSuppliers.includes(s.id))
+  const [realProducts, setRealProducts] = useState<any[]>([])
+  const [realSuppliers, setRealSuppliers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const productsCount = getFavoriteProductsCount()
-  const suppliersCount = getFavoriteSuppliersCount()
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        // Fetch all products to filter (not ideal but works for now given current architecture)
+        const { data: prods } = await supabase.from('products').select('*')
+        const sups = await getSuppliers()
+
+        if (prods) {
+          // Format like Marketplace does
+          const formatted = prods.map(p => ({
+            id: p.id,
+            name: p.name,
+            wholesalePrice: p.wholesale_price || 0,
+            image: p.image_url || '/placeholder-product.jpg',
+            supplierName: sups.find(s => s.id === p.supplier_id)?.name || 'Fornecedor',
+            category: p.category || 'Geral',
+            readyToShip: p.ready_to_ship || false,
+            modalities: p.modalities || ['Atacado'],
+          }))
+          setRealProducts(formatted.filter(p => favoriteProducts.includes(p.id)))
+        }
+
+        setRealSuppliers(sups.filter(s => favoriteSuppliers.includes(s.id)))
+      } catch (err) {
+        console.error('Erro ao carregar favoritos:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [favoriteProducts, favoriteSuppliers])
+
+  const favoriteProductsList = realProducts
+  const favoriteSuppliersList = realSuppliers
+
+  const productsCount = favoriteProductsList.length
+  const suppliersCount = favoriteSuppliersList.length
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -63,41 +104,48 @@ export default function FavoritosPage() {
                 Fornecedores ({suppliersCount})
               </TabsTrigger>
             </TabsList>
-
-            {/* Products Tab */}
-            <TabsContent value="produtos">
-              {favoriteProductsList.length === 0 ? (
-                <EmptyState 
-                  icon={<Package className="w-16 h-16 text-muted-foreground" />}
-                  title="Nenhum produto favorito"
-                  description="Explore o marketplace e salve os produtos que você mais gostou clicando no coração."
-                  actionLabel="Explorar produtos"
-                  actionHref="/"
-                />
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      {productsCount} produto{productsCount !== 1 ? 's' : ''} salvo{productsCount !== 1 ? 's' : ''}
-                    </p>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => favoriteProducts.forEach(id => removeFavoriteProduct(id))}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Limpar tudo
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {favoriteProductsList.map(product => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </TabsContent>
+ 
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <p className="text-muted-foreground animate-pulse">Buscando seus favoritos...</p>
+              </div>
+            ) : (
+              <>
+                {/* Products Tab */}
+                <TabsContent value="produtos">
+                  {favoriteProductsList.length === 0 ? (
+                    <EmptyState 
+                      icon={<Package className="w-16 h-16 text-muted-foreground" />}
+                      title="Nenhum produto favorito"
+                      description="Explore o marketplace e salve os produtos que você mais gostou clicando no coração."
+                      actionLabel="Explorar produtos"
+                      actionHref="/"
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          {productsCount} produto{productsCount !== 1 ? 's' : ''} salvo{productsCount !== 1 ? 's' : ''}
+                        </p>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => favoriteProducts.forEach(id => removeFavoriteProduct(id))}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Limpar tudo
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {favoriteProductsList.map(product => (
+                          <ProductCard key={product.id} product={product} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
 
             {/* Suppliers Tab */}
             <TabsContent value="fornecedores">
@@ -137,6 +185,8 @@ export default function FavoritosPage() {
                 </div>
               )}
             </TabsContent>
+            </>
+            )}
           </Tabs>
         </div>
       </main>
@@ -175,7 +225,7 @@ function SupplierCard({
   supplier, 
   onRemove 
 }: { 
-  supplier: typeof suppliers[0]
+  supplier: any
   onRemove: () => void 
 }) {
   return (

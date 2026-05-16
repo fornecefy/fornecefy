@@ -291,6 +291,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
+    // Limpa dados locais ao deslogar para evitar estados "fantasma"
+    localStorage.removeItem('fornecefy_favorite_products')
+    localStorage.removeItem('fornecefy_favorite_suppliers')
+    localStorage.removeItem('fornecefy_cart_items')
     router.push('/')
   }
 

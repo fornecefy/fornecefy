@@ -1,20 +1,26 @@
 "use client"
+ 
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import { formatCurrency, Modalidade } from './data'
+import { supabase } from './supabase'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
-import { Product, CartItem, suppliers, formatCurrency, Modalidade } from './data'
+interface CartItem {
+  product: any
+  quantity: number
+  selectedModality: Modalidade
+}
 
 interface CartContextType {
   items: CartItem[]
-  addItem: (product: Product, quantity?: number, modality?: Modalidade) => void
+  addItem: (product: any, quantity?: number, modality?: Modalidade) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   getItemsBySupplier: () => Map<string, CartItem[]>
   getSupplierTotal: (supplierId: string) => number
-  isMinOrderMet: (supplierId: string) => boolean
   getTotalItems: () => number
   getTotalValue: () => number
-  generateWhatsAppMessage: (supplierId?: string, shippingMethod?: string, address?: string) => string
+  generateWhatsAppMessage: (supplier: any, supplierItems: CartItem[], shippingMethod?: string, address?: string) => string
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -22,8 +28,23 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
 
-  const addItem = (product: Product, quantity?: number, modality: Modalidade = "Atacado") => {
-    const minQty = product.prices?.[modality]?.minQuantity || product.minQuantity
+  useEffect(() => {
+    const savedCart = localStorage.getItem('fornecefy_cart_items')
+    if (savedCart) {
+      try {
+        setItems(JSON.parse(savedCart))
+      } catch (e) {
+        console.error('Error parsing cart from localStorage', e)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('fornecefy_cart_items', JSON.stringify(items))
+  }, [items])
+
+  const addItem = (product: any, quantity?: number, modality: Modalidade = "Atacado") => {
+    const minQty = product.minQuantity || 1
     const finalQuantity = quantity || minQty
 
     setItems(prev => {
@@ -57,12 +78,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([])
+    localStorage.removeItem('fornecefy_cart_items')
   }
 
   const getItemsBySupplier = () => {
     const grouped = new Map<string, CartItem[]>()
     items.forEach(item => {
-      const supplierId = item.product.supplierId
+      const supplierId = item.product.supplierId || item.product.supplier_id
       if (!grouped.has(supplierId)) {
         grouped.set(supplierId, [])
       }
@@ -73,17 +95,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const getSupplierTotal = (supplierId: string) => {
     return items
-      .filter(item => item.product.supplierId === supplierId)
+      .filter(item => (item.product.supplierId || item.product.supplier_id) === supplierId)
       .reduce((sum, item) => {
-        const price = item.product.prices?.[item.selectedModality]?.price || item.product.wholesalePrice
+        const price = item.product.wholesalePrice || item.product.wholesale_price || 0
         return sum + price * item.quantity
       }, 0)
-  }
-
-  const isMinOrderMet = (supplierId: string) => {
-    const supplier = suppliers.find(s => s.id === supplierId)
-    if (!supplier) return true
-    return getSupplierTotal(supplierId) >= supplier.minOrderValue
   }
 
   const getTotalItems = () => {
@@ -92,42 +108,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const getTotalValue = () => {
     return items.reduce((sum, item) => {
-      const price = item.product.prices?.[item.selectedModality]?.price || item.product.wholesalePrice
+      const price = item.product.wholesalePrice || item.product.wholesale_price || 0
       return sum + price * item.quantity
     }, 0)
   }
 
-  const generateWhatsAppMessage = (targetSupplierId?: string, shippingMethod = "A combinar", address = "") => {
-    const groupedItems = getItemsBySupplier()
+  const generateWhatsAppMessage = (supplier: any, supplierItems: CartItem[], shippingMethod = "A combinar", address = "") => {
     let message = "🛒 *NOVO PEDIDO - FORNECEFY*\n"
     message += "----------------------------------\n"
+    message += `🏪 *FORNECEDOR:* ${supplier.name.toUpperCase()}\n`
+    message += `🚚 *FRETE:* ${shippingMethod}\n`
+    if (address) message += `📍 *ENDEREÇO:* ${address}\n`
+    message += "----------------------------------\n\n"
+    message += `📦 *ITENS DO PEDIDO:*\n`
     
-    if (targetSupplierId) {
-      const supplierItems = groupedItems.get(targetSupplierId) || []
-      const supplier = suppliers.find(s => s.id === targetSupplierId)
-      if (supplier) {
-        message += `🏪 *FORNECEDOR:* ${supplier.name.toUpperCase()}\n`
-        message += `🆔 *ID FORNECEDOR:* ${supplier.id}\n`
-        message += `🚚 *FRETE:* ${shippingMethod}\n`
-        if (address) message += `📍 *ENDEREÇO:* ${address}\n`
-        message += "----------------------------------\n\n"
-        message += `📦 *ITENS DO PEDIDO:*\n`
-        
-        supplierItems.forEach(item => {
-          const price = item.product.prices?.[item.selectedModality]?.price || item.product.wholesalePrice
-          message += `🔹 ${item.product.name}\n`
-          message += `   • Qtd: ${item.quantity}\n`
-          message += `   • Modalidade: ${item.selectedModality}\n`
-          message += `   • Preço Un: ${formatCurrency(price)}\n`
-          message += `   • Subtotal: ${formatCurrency(price * item.quantity)}\n\n`
-        })
-        
-        message += "----------------------------------\n"
-        message += `💰 *VALOR TOTAL: ${formatCurrency(getSupplierTotal(targetSupplierId))}*\n`
-        message += "----------------------------------\n"
-        message += "\n📌 _Pedido gerado automaticamente via Fornecefy_"
-      }
-    }
+    supplierItems.forEach(item => {
+      const price = item.product.wholesalePrice || item.product.wholesale_price || 0
+      message += `🔹 ${item.product.name}\n`
+      message += `   • Qtd: ${item.quantity}\n`
+      message += `   • Modalidade: ${item.selectedModality}\n`
+      message += `   • Preço Un: ${formatCurrency(price)}\n`
+      message += `   • Subtotal: ${formatCurrency(price * item.quantity)}\n\n`
+    })
+    
+    message += "----------------------------------\n"
+    message += `💰 *VALOR TOTAL: ${formatCurrency(getSupplierTotal(supplier.id || supplier.user_id))}*\n`
+    message += "----------------------------------\n"
+    message += "\n📌 _Pedido gerado automaticamente via Fornecefy_"
     
     return encodeURIComponent(message)
   }
@@ -141,7 +148,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clearCart,
       getItemsBySupplier,
       getSupplierTotal,
-      isMinOrderMet,
       getTotalItems,
       getTotalValue,
       generateWhatsAppMessage,

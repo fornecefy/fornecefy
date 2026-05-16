@@ -21,7 +21,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { getTotalItems } = useCart()
   const { getFavoriteProductsCount } = useFavorites()
-  const { user, logout } = useAuth()
+  const { user, logout, isLoading } = useAuth()
   const [headerLogo, setHeaderLogo] = useState<string | null>(null)
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export function Header() {
             <Link href="/favoritos">
               <Button variant="ghost" size="icon" className="relative">
                 <Heart className="h-4 w-4" />
-                {favoritesCount > 0 && (
+                {user && favoritesCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-4 min-w-4 flex items-center justify-center p-0 bg-red-500 text-white text-[10px]">
                     {favoritesCount}
                   </Badge>
@@ -83,7 +83,7 @@ export function Header() {
             <Link href="/carrinho">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-4 w-4" />
-                {totalItems > 0 && (
+                {user && totalItems > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-4 min-w-4 flex items-center justify-center p-0 bg-accent text-accent-foreground text-[10px]">
                     {totalItems}
                   </Badge>
@@ -91,7 +91,12 @@ export function Header() {
               </Button>
             </Link>
 
-            {user ? (
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+                <div className="w-20 h-8 rounded bg-muted animate-pulse" />
+              </div>
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">

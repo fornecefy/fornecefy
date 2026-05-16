@@ -22,7 +22,9 @@ import {
   Facebook,
   AlertTriangle,
   Play,
-  Lock
+  Lock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -52,6 +54,7 @@ export default function ProductClient({ productId }: { productId: string }) {
   const [selectedModality, setSelectedModality] = useState<Modalidade>("Atacado")
   const [addedToCart, setAddedToCart] = useState(false)
   const [activeImage, setActiveImage] = useState('')
+  const [showFullDescription, setShowFullDescription] = useState(false)
 
   useEffect(() => {
     async function fetchProductData() {
@@ -371,6 +374,30 @@ export default function ProductClient({ productId }: { productId: string }) {
                   </Badge>
                 </div>
               </div>
+
+              {/* Description Section */}
+              {product.description && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-foreground">Descrição do Produto</h3>
+                  <div className="relative">
+                    <p className={`text-sm text-muted-foreground leading-relaxed whitespace-pre-line ${!showFullDescription && product.description.length > 300 ? 'line-clamp-4' : ''}`}>
+                      {product.description}
+                    </p>
+                    {product.description.length > 300 && (
+                      <button 
+                        onClick={() => setShowFullDescription(!showFullDescription)}
+                        className="text-primary text-sm font-medium hover:underline mt-1 flex items-center gap-1"
+                      >
+                        {showFullDescription ? (
+                          <>Ver menos <ChevronUp className="w-4 h-4" /></>
+                        ) : (
+                          <>Ver mais <ChevronDown className="w-4 h-4" /></>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {user ? (
                 <>

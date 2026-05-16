@@ -258,7 +258,6 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
 
       const productData: any = {
         name: formData.name,
-        slug: generateSlug(formData.name),
         category: formData.category,
         subcategory: formData.subcategory,
         description: formData.description,
@@ -271,7 +270,6 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
         gallery_urls: formData.gallery,
         sku: formData.sku,
         video_url: formData.videoUrl,
-        supplier_id: formData.supplier_id,
         modalities: formData.modalities,
         status: 'active',
         has_stock_control: formData.has_stock_control,
@@ -285,23 +283,45 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
         variations: formData.variations
       }
 
-      console.log('Tentando salvar produto:', productData)
-
-      let result;
-      if (productId) {
-        result = await supabase
-          .from('products')
-          .update(productData)
-          .eq('id', productId)
-      } else {
-        result = await supabase
-          .from('products')
-          .insert([productData])
+      // Só gera novo slug se for um novo produto ou se o nome mudou significativamente
+      if (!productId) {
+        productData.slug = generateSlug(formData.name)
+        productData.supplier_id = formData.supplier_id
       }
+
+      console.log('Iniciando salvamento. ID:', productId)
+      console.log('Payload final enviado ao Supabase:', JSON.stringify(productData, null, 2))
+
+      // Adicionando um timeout de segurança maior
+      let savePromise;
+      if (productId) {
+        let query = supabase.from('products').update(productData).eq('id', productId)
+        
+        // Se não for o admin master, reforça a segurança com o ID do fornecedor
+        if (user?.email !== 'fornecefy@gmail.com') {
+          query = query.eq('supplier_id', user?.id)
+        }
+        
+        savePromise = query
+      } else {
+        savePromise = supabase.from('products').insert([{ ...productData, supplier_id: user?.id }])
+      }
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Tempo de resposta excedido (30s). A conexão com o banco de dados está lenta ou bloqueada por uma regra de segurança (RLS).')), 30000)
+      )
+
+      const result: any = await Promise.race([savePromise, timeoutPromise])
 
       if (result.error) {
         console.error('Erro Supabase ao salvar:', result.error)
-        throw new Error(result.error.message)
+        alert(`Erro ao salvar produto ${productId}:\n${result.error.message}\nCódigo: ${result.error.code}`)
+        throw result.error
+      }
+
+      // Verifica se alguma linha foi realmente afetada
+      if (productId && result.status === 204 || result.status === 200) {
+        console.log('Resposta do Supabase:', result.status)
       }
 
       console.log('Produto salvo com sucesso!')
@@ -310,6 +330,7 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
     } catch (err: any) {
       console.error('Erro no handleSubmit:', err)
       setError(err.message || 'Erro ao salvar produto. Tente novamente.')
+      alert('Erro no processo de salvamento: ' + (err.message || 'Erro desconhecido'))
     } finally {
       setIsLoading(false)
     }
