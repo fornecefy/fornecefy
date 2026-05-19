@@ -22,6 +22,7 @@ function CadastroContent() {
   
   const [step, setStep] = useState<'type' | 'form'>(tipoParam ? 'form' : 'type')
   const [userType, setUserType] = useState<UserType | null>(tipoParam)
+  const [documentType, setDocumentType] = useState<'cpf' | 'cnpj'>(tipoParam === 'fornecedor' ? 'cnpj' : 'cpf')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -40,12 +41,14 @@ function CadastroContent() {
   useEffect(() => {
     if (tipoParam) {
       setUserType(tipoParam)
+      setDocumentType(tipoParam === 'fornecedor' ? 'cnpj' : 'cpf')
       setStep('form')
     }
   }, [tipoParam])
 
   const handleSelectType = (type: UserType) => {
     setUserType(type)
+    setDocumentType(type === 'fornecedor' ? 'cnpj' : 'cpf')
     setStep('form')
   }
 
@@ -60,13 +63,23 @@ function CadastroContent() {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`
   }
 
-  const formatCNPJ = (value: string) => {
+  const formatDocument = (value: string, type: 'cpf' | 'cnpj') => {
     const numbers = value.replace(/\D/g, '')
-    if (numbers.length <= 2) return numbers
-    if (numbers.length <= 5) return `${numbers.slice(0, 2)}.${numbers.slice(2)}`
-    if (numbers.length <= 8) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5)}`
-    if (numbers.length <= 12) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8)}`
-    return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12, 14)}`
+    
+    if (type === 'cpf') {
+      return numbers
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+        .substring(0, 14)
+    } else {
+      return numbers
+        .replace(/(\d{2})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1/$2')
+        .replace(/(\d{4})(\d{1,2})/, '$1-$2')
+        .substring(0, 18)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -259,13 +272,39 @@ function CadastroContent() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="cnpj">CNPJ</Label>
+                    <Label htmlFor="documentType">Documento</Label>
+                    <Select value={documentType} onValueChange={(value: 'cpf' | 'cnpj') => { setDocumentType(value); handleChange('cnpj', '') }} disabled={userType === 'fornecedor'}>
+                      <SelectTrigger id="documentType">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cpf">CPF</SelectItem>
+                        <SelectItem value="cnpj">CNPJ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cnpj">{documentType === 'cpf' ? 'Número do CPF' : 'Número do CNPJ'}</Label>
                     <Input
                       id="cnpj"
-                      placeholder="00.000.000/0000-00"
+                      placeholder={documentType === 'cpf' ? "000.000.000-00" : "00.000.000/0000-00"}
                       value={formData.cnpj}
-                      onChange={(e) => handleChange('cnpj', formatCNPJ(e.target.value))}
-                      maxLength={18}
+                      onChange={(e) => handleChange('cnpj', formatDocument(e.target.value, documentType))}
+                      maxLength={documentType === 'cpf' ? 14 : 18}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone / WhatsApp</Label>
+                    <Input
+                      id="phone"
+                      placeholder="(00) 00000-0000"
+                      value={formData.phone}
+                      onChange={(e) => handleChange('phone', formatPhone(e.target.value))}
+                      maxLength={15}
                       required
                     />
                   </div>
@@ -282,18 +321,6 @@ function CadastroContent() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone / WhatsApp</Label>
-                  <Input
-                    id="phone"
-                    placeholder="(00) 00000-0000"
-                    value={formData.phone}
-                    onChange={(e) => handleChange('phone', formatPhone(e.target.value))}
-                    maxLength={15}
-                    required
-                  />
                 </div>
                 
                 <div className="space-y-2">

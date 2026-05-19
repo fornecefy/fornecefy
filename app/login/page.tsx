@@ -65,7 +65,7 @@ function LoginContent() {
       }
       // NÃO resetar isLoading aqui — a navegação vai desmontar este componente
     } else {
-      console.error('Login failed:', error)
+      console.warn('Login failed:', error)
       setError(error || 'E-mail ou senha inválidos')
       setIsLoading(false)
     }
