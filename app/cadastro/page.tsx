@@ -36,6 +36,7 @@ function CadastroContent() {
     phone: '',
     cnpj: '',
     state: '',
+    modality: '',
   })
 
   useEffect(() => {
@@ -107,6 +108,7 @@ function CadastroContent() {
       phone: formData.phone,
       cnpj: formData.cnpj,
       state: formData.state,
+      modality: formData.modality,
     })
     
     if (success) {
@@ -269,6 +271,23 @@ function CadastroContent() {
                     required
                   />
                 </div>
+
+                {userType === 'fornecedor' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="modality">Modalidade do Fornecedor</Label>
+                    <Select value={formData.modality} onValueChange={(value) => handleChange('modality', value)} required>
+                      <SelectTrigger id="modality">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Atacado">Atacado</SelectItem>
+                        <SelectItem value="Dropshipping">Dropshipping</SelectItem>
+                        <SelectItem value="Fabricante">Fabricante</SelectItem>
+                        <SelectItem value="Importador">Importador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

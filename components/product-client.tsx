@@ -59,6 +59,7 @@ export default function ProductClient({ productId }: { productId: string }) {
   const [activeImage, setActiveImage] = useState('')
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [isZoomOpen, setIsZoomOpen] = useState(false)
+  const [selectedVariations, setSelectedVariations] = useState<Record<string, string>>({})
 
   useEffect(() => {
     async function fetchProductData() {
@@ -91,6 +92,8 @@ export default function ProductClient({ productId }: { productId: string }) {
           category: prod.category || prod.categoria || 'Geral',
           subcategory: prod.subcategory || prod.subcategoria || null,
           supplier_id: prod.supplier_id,
+          wholesale_pricing_tiers: prod.variations?.find((v: any) => v.name === '__wholesale_pricing_tiers')?.tiers || [],
+          variations: prod.variations?.filter((v: any) => v.name !== '__wholesale_pricing_tiers') || [],
         }
 
         setProduct(mappedProd)
@@ -108,7 +111,10 @@ export default function ProductClient({ productId }: { productId: string }) {
           if (supp) {
             setSupplier({
               ...supp,
-              logo: supp.company_logo_url || '/placeholder-logo.png'
+              logo: supp.company_logo_url || '/placeholder-logo.png',
+              features: supp.social_links?.features || {},
+              payment_config: supp.social_links?.payment_config || {},
+              hide_whatsapp: supp.social_links?.hide_whatsapp || false,
             })
           }
 
@@ -127,7 +133,7 @@ export default function ProductClient({ productId }: { productId: string }) {
               minQuantity: r.min_quantity || 1,
               category: r.category || r.categoria || 'Geral',
               supplierName: supp.name,
-              supplierVerified: supp.verified
+              supplierVerified: supp.verified_badge
             })))
           }
         }
@@ -165,7 +171,14 @@ export default function ProductClient({ productId }: { productId: string }) {
     )
   }
 
-  const currentPrice = product.wholesalePrice
+  let currentPrice = product.wholesalePrice
+  if (product.wholesale_pricing_tiers?.length > 0) {
+    const applicableTier = product.wholesale_pricing_tiers.reduce((prev: any, curr: any) => {
+      return (quantity >= curr.quantity && curr.quantity > (prev ? prev.quantity : 0)) ? curr : prev
+    }, null)
+    if (applicableTier) currentPrice = applicableTier.price
+  }
+
   const isFavorite = isFavoriteProduct(product.id)
   const totalPrice = currentPrice * quantity
 
@@ -383,6 +396,32 @@ export default function ProductClient({ productId }: { productId: string }) {
                 )}
               </div>
 
+              {/* Pricing Tiers Table */}
+              {user && product.wholesale_pricing_tiers?.length > 0 && (
+                <div className="bg-muted/30 border border-border rounded-xl overflow-hidden mt-4">
+                  <div className="px-4 py-2 bg-muted/50 border-b border-border text-sm font-bold">
+                    Preços por Quantidade no Atacado
+                  </div>
+                  <div className="divide-y divide-border">
+                    <div className="flex justify-between px-4 py-2 text-sm">
+                      <span className="text-muted-foreground">Até {product.wholesale_pricing_tiers[0].quantity - 1} un</span>
+                      <span className="font-semibold">{formatCurrency(product.wholesalePrice)} / un</span>
+                    </div>
+                    {product.wholesale_pricing_tiers.map((tier: any, idx: number) => {
+                      const nextTier = product.wholesale_pricing_tiers[idx + 1]
+                      return (
+                        <div key={idx} className="flex justify-between px-4 py-2 text-sm">
+                          <span className="text-muted-foreground">
+                            {nextTier ? `De ${tier.quantity} até ${nextTier.quantity - 1} un` : `Acima de ${tier.quantity} un`}
+                          </span>
+                          <span className="font-semibold text-primary">{formatCurrency(tier.price)} / un</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
               <Separator />
 
               {/* Product Details */}
@@ -429,6 +468,47 @@ export default function ProductClient({ productId }: { productId: string }) {
 
               {user ? (
                 <>
+                  {/* Variations */}
+                  {product.variations?.length > 0 && (
+                    <div className="space-y-4">
+                      <Separator />
+                      {product.variations.map((v: any, idx: number) => (
+                        <div key={idx} className="space-y-3">
+                          <label className="text-sm font-medium">
+                            {v.name}: <span className="text-muted-foreground">{selectedVariations[v.name] || 'Selecione'}</span>
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {v.options?.map((opt: any, optIdx: number) => {
+                              const isSelected = selectedVariations[v.name] === opt.value
+                              return (
+                                <button
+                                  key={optIdx}
+                                  onClick={() => {
+                                    setSelectedVariations(prev => ({ ...prev, [v.name]: opt.value }))
+                                    if (opt.image) setActiveImage(opt.image)
+                                  }}
+                                  className={`relative rounded-md border-2 overflow-hidden transition-all ${
+                                    isSelected ? 'border-primary shadow-sm' : 'border-border hover:border-primary/50'
+                                  }`}
+                                >
+                                  {opt.image ? (
+                                    <div className="w-12 h-12 relative">
+                                      <Image src={opt.image} alt={opt.value} fill className="object-cover" />
+                                    </div>
+                                  ) : (
+                                    <div className="px-4 py-2 text-sm font-medium">
+                                      {opt.value}
+                                    </div>
+                                  )}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <Separator />
                   {/* Quantity Selector */}
                   <div className="space-y-3">
@@ -462,23 +542,54 @@ export default function ProductClient({ productId }: { productId: string }) {
 
                   {/* Actions */}
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
-                      size="lg" 
-                      className="flex-1 gap-2"
-                      onClick={handleAddToCart}
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      {addedToCart ? 'Adicionado!' : 'Adicionar ao Orçamento'}
-                    </Button>
-                    <Button 
-                      size="lg" 
-                      variant="outline"
-                      className="flex-1 gap-2 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700"
-                      onClick={handleWhatsApp}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      WhatsApp
-                    </Button>
+                    {supplier?.features?.online_payment && supplier?.payment_config?.type && (
+                      <Button 
+                        size="lg" 
+                        className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => {
+                          const hasMissingVariations = product.variations?.some((v: any) => !selectedVariations[v.name])
+                          if (hasMissingVariations) {
+                            alert('Por favor, selecione todas as variações antes de comprar.')
+                            return
+                          }
+                          addItem(product, quantity)
+                          router.push(`/checkout/${supplier.id}`)
+                        }}
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        Comprar Online
+                      </Button>
+                    )}
+                    
+                    {!(supplier?.features?.online_payment && supplier?.payment_config?.type) && (
+                      <Button 
+                        size="lg" 
+                        className="flex-1 gap-2"
+                        onClick={() => {
+                          const hasMissingVariations = product.variations?.some((v: any) => !selectedVariations[v.name])
+                          if (hasMissingVariations) {
+                            alert('Por favor, selecione todas as variações antes de adicionar.')
+                            return
+                          }
+                          handleAddToCart()
+                        }}
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        {addedToCart ? 'Adicionado!' : 'Adicionar ao Orçamento'}
+                      </Button>
+                    )}
+
+                    {!supplier?.hide_whatsapp && (
+                      <Button 
+                        size="lg" 
+                        variant={supplier?.features?.online_payment && supplier?.payment_config?.type ? "outline" : "default"}
+                        className={`flex-1 gap-2 ${supplier?.features?.online_payment ? 'border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                        onClick={handleWhatsApp}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        WhatsApp
+                      </Button>
+                    )}
                   </div>
                 </>
               ) : (
@@ -507,7 +618,7 @@ export default function ProductClient({ productId }: { productId: string }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold truncate">{supplier.name}</h3>
-                        {supplier.verified && <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />}
+                        {supplier.verified_badge && <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />}
                       </div>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                         <MapPin className="w-3 h-3" />

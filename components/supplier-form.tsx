@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
-import { Lock, Layout, MapPin as MapPinIcon, ShieldCheck } from 'lucide-react'
+import { Lock, Layout, MapPin as MapPinIcon, ShieldCheck, CreditCard } from 'lucide-react'
 
 import { BRAZIL_STATES } from '@/lib/constants'
 
@@ -42,16 +42,17 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    trade_name: '',
+    company_name: '',
     whatsapp: '',
     state: '',
     city: '',
     plan: 'Básico',
     status: 'approved',
     logo: '',
-    verified: false,
+    verified_badge: false,
     description: '',
-    user_id: ''
+    user_id: '',
+    features: { online_payment: false }
   })
 
   // Password change state (for Admin)
@@ -80,16 +81,17 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
         setFormData({
           name: data.name || '',
           email: data.email || '',
-          trade_name: data.trade_name || '',
+          company_name: data.company_name || '',
           whatsapp: data.whatsapp || '',
           state: data.state || '',
           city: data.city || '',
           plan: data.plan || 'Básico',
           status: data.status || 'approved',
           logo: data.company_logo_url || '',
-          verified: data.verified || false,
+          verified_badge: data.verified_badge || false,
           description: data.description || '',
-          user_id: data.user_id || ''
+          user_id: data.user_id || data.auth_user_id || '',
+          features: data.social_links?.features || { online_payment: false }
         })
       }
     } catch (err: any) {
@@ -135,19 +137,27 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
 
     try {
       if (supplierId) {
+        // Buscar social_links atual para preservar dados existentes
+        const { data: currentData } = await supabase.from('suppliers').select('social_links').eq('id', supplierId).single()
+        const existingSocialLinks = currentData?.social_links || {}
+        
         const { error: dbError } = await supabase
           .from('suppliers')
           .update({
             name: formData.name,
-            trade_name: formData.trade_name,
+            company_name: formData.company_name,
             whatsapp: formData.whatsapp,
             state: formData.state,
             city: formData.city,
             plan: formData.plan,
             status: formData.status,
             company_logo_url: formData.logo,
-            verified: formData.verified,
-            description: formData.description
+            verified_badge: formData.verified_badge,
+            description: formData.description,
+            social_links: {
+              ...existingSocialLinks,
+              features: formData.features
+            }
           })
           .eq('id', supplierId)
         
@@ -158,17 +168,17 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
           .from('suppliers')
           .insert([{
             name: formData.name,
-            trade_name: formData.trade_name,
-            email: formData.email,
+            company_name: formData.company_name,
             whatsapp: formData.whatsapp,
             state: formData.state,
             city: formData.city,
             plan: formData.plan,
             status: formData.status,
             company_logo_url: formData.logo,
-            verified: formData.verified,
+            verified_badge: formData.verified_badge,
             description: formData.description,
-            slug: formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u0300]/g, "").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-")
+            social_links: { features: formData.features },
+            slug: formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
           }])
         
         if (dbError) throw dbError
@@ -245,12 +255,15 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
         )}
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-muted/50 p-1 rounded-xl">
+          <TabsList className="grid w-full grid-cols-4 mb-8 h-12 bg-muted/50 p-1 rounded-xl">
             <TabsTrigger value="general" className="rounded-lg gap-2">
               <Layout className="w-4 h-4" /> Dados Gerais
             </TabsTrigger>
             <TabsTrigger value="plan" className="rounded-lg gap-2">
               <MapPinIcon className="w-4 h-4" /> Endereço & Plano
+            </TabsTrigger>
+            <TabsTrigger value="features" className="rounded-lg gap-2">
+              <CreditCard className="w-4 h-4" /> Recursos
             </TabsTrigger>
             <TabsTrigger value="security" className="rounded-lg gap-2">
               <Lock className="w-4 h-4" /> Segurança
@@ -292,9 +305,9 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <Label htmlFor="trade_name" className="text-base font-bold">Nome da Empresa</Label>
+                    <Label htmlFor="company_name" className="text-base font-bold">Nome da Empresa</Label>
                     <div className="relative">
-                      <Input id="trade_name" className="pl-10 h-12" value={formData.trade_name} onChange={e => setFormData({...formData, trade_name: e.target.value})} required />
+                      <Input id="company_name" className="pl-10 h-12" value={formData.company_name} onChange={e => setFormData({...formData, company_name: e.target.value})} required />
                       <Building2 className="absolute left-3.5 top-4 h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
@@ -360,8 +373,8 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
                   type="checkbox" 
                   id="verified" 
                   className="w-6 h-6 rounded border-gray-300 text-primary focus:ring-primary accent-primary cursor-pointer" 
-                  checked={formData.verified} 
-                  onChange={e => setFormData({...formData, verified: e.target.checked})}
+                  checked={formData.verified_badge} 
+                  onChange={e => setFormData({...formData, verified_badge: e.target.checked})}
                 />
               </div>
               <div className="ml-3 text-sm">
@@ -370,6 +383,32 @@ export function SupplierForm({ supplierId, onClose, onSuccess }: SupplierFormPro
                   Fornecedor Verificado (Selo Blue)
                 </Label>
                 <p className="text-muted-foreground">Exibe o selo de confiança e prioriza o fornecedor nas buscas.</p>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="features" className="space-y-10">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 p-6 bg-blue-500/5 rounded-2xl border-2 border-dashed border-blue-500/20">
+                <div className="flex items-center h-5">
+                  <input 
+                    type="checkbox" 
+                    id="online_payment" 
+                    className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-600 accent-blue-600 cursor-pointer" 
+                    checked={formData.features.online_payment} 
+                    onChange={e => setFormData({
+                      ...formData, 
+                      features: { ...formData.features, online_payment: e.target.checked }
+                    })}
+                  />
+                </div>
+                <div className="ml-3 text-sm">
+                  <Label htmlFor="online_payment" className="cursor-pointer font-bold text-lg text-blue-700 flex items-center gap-2">
+                    <CreditCard className="w-6 h-6" />
+                    Ativar Pagamento Online
+                  </Label>
+                  <p className="text-muted-foreground mt-1">Ao ativar, o fornecedor terá acesso a configurar seu próprio meio de pagamento (Mercado Pago ou PIX Manual) e receber via PIX com checkout transparente diretamente no site.</p>
+                </div>
               </div>
             </div>
           </TabsContent>

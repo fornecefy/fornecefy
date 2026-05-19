@@ -16,6 +16,7 @@ interface CartContextType {
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
+  clearSupplierItems: (supplierId: string) => void
   getItemsBySupplier: () => Map<string, CartItem[]>
   getSupplierTotal: (supplierId: string) => number
   getTotalItems: () => number
@@ -81,6 +82,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('fornecefy_cart_items')
   }
 
+  const clearSupplierItems = (supplierId: string) => {
+    setItems(prev => prev.filter(item => (item.product.supplierId || item.product.supplier_id) !== supplierId))
+  }
+
   const getItemsBySupplier = () => {
     const grouped = new Map<string, CartItem[]>()
     items.forEach(item => {
@@ -103,7 +108,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   const getTotalItems = () => {
-    return items.reduce((sum, item) => sum + item.quantity, 0)
+    return items.length
   }
 
   const getTotalValue = () => {
@@ -146,6 +151,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem,
       updateQuantity,
       clearCart,
+      clearSupplierItems,
       getItemsBySupplier,
       getSupplierTotal,
       getTotalItems,

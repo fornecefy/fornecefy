@@ -236,13 +236,13 @@ export default function MasterAdminPage() {
   }
 
   const handleToggleVerified = async (id: string, currentStatus: boolean) => {
-    setSuppliers(prev => prev.map(s => s.id === id ? { ...s, verified: !currentStatus } : s))
+    setSuppliers(prev => prev.map(s => s.id === id ? { ...s, verified_badge: !currentStatus } : s))
     try {
-      const { error } = await supabase.from('suppliers').update({ verified: !currentStatus }).eq('id', id)
+      const { error } = await supabase.from('suppliers').update({ verified_badge: !currentStatus }).eq('id', id)
       if (error) throw error
     } catch (err) {
       console.error('Erro ao atualizar fornecedor:', err)
-      setSuppliers(prev => prev.map(s => s.id === id ? { ...s, verified: currentStatus } : s))
+      setSuppliers(prev => prev.map(s => s.id === id ? { ...s, verified_badge: currentStatus } : s))
     }
   }
 
@@ -669,7 +669,7 @@ export default function MasterAdminPage() {
                                   <div className="flex flex-col">
                                     <div className="flex items-center gap-1.5">
                                       <span className="font-bold text-sm">{s.name}</span>
-                                      {s.verified && <BadgeCheck className="w-4 h-4 text-primary fill-primary/10" />}
+                                      {s.verified_badge && <BadgeCheck className="w-4 h-4 text-primary fill-primary/10" />}
                                     </div>
                                     <span className="text-[11px] text-muted-foreground">{s.email}</span>
                                   </div>

@@ -90,7 +90,8 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
     depth: '',
     shipping_type: 'Correios',
     collections: [] as string[],
-    variations: [] as { name: string, values: string[] }[]
+    variations: [] as { name: string, options: { value: string, image?: string }[] }[],
+    wholesale_pricing_tiers: [] as { quantity: number, price: number }[]
   })
 
   const [newCollection, setNewCollection] = useState('')
@@ -150,7 +151,11 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
           depth: data.depth || '',
           shipping_type: data.shipping_type || 'Correios',
           collections: data.collections || [],
-          variations: data.variations || []
+          variations: data.variations?.filter((v: any) => v.name !== '__wholesale_pricing_tiers').map((v: any) => ({
+            name: v.name,
+            options: v.options || (v.values ? v.values.map((val: string) => ({ value: val })) : [])
+          })) || [],
+          wholesale_pricing_tiers: data.variations?.find((v: any) => v.name === '__wholesale_pricing_tiers')?.tiers || []
         })
       }
     } catch (err: any) {
@@ -280,7 +285,12 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
         depth: formData.depth,
         shipping_type: formData.shipping_type,
         collections: formData.collections,
-        variations: formData.variations
+        variations: [
+          ...formData.variations,
+          ...(formData.wholesale_pricing_tiers.length > 0 
+            ? [{ name: '__wholesale_pricing_tiers', tiers: formData.wholesale_pricing_tiers }] 
+            : [])
+        ]
       }
 
       // Só gera novo slug se for um novo produto ou se o nome mudou significativamente
@@ -667,6 +677,58 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
               </div>
             </div>
 
+            <div className="space-y-4 p-6 bg-muted/20 rounded-2xl border">
+              <Label className="text-base font-bold flex items-center gap-2">Preços por Quantidade (Atacado)</Label>
+              <div className="grid grid-cols-3 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label>Quantidade Mínima</Label>
+                  <Input id="tier_qty" type="number" placeholder="Ex: 50" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Preço Unitário (R$)</Label>
+                  <Input id="tier_price" type="number" step="0.01" placeholder="Ex: 8.50" />
+                </div>
+                <Button 
+                  type="button" 
+                  onClick={() => {
+                    const qtyInput = document.getElementById('tier_qty') as HTMLInputElement
+                    const priceInput = document.getElementById('tier_price') as HTMLInputElement
+                    const qty = parseInt(qtyInput.value)
+                    const price = parseFloat(priceInput.value)
+                    if (!isNaN(qty) && !isNaN(price)) {
+                      setFormData(prev => ({
+                        ...prev,
+                        wholesale_pricing_tiers: [...prev.wholesale_pricing_tiers, { quantity: qty, price }].sort((a,b) => a.quantity - b.quantity)
+                      }))
+                      qtyInput.value = ''
+                      priceInput.value = ''
+                    }
+                  }}
+                >Adicionar</Button>
+              </div>
+              {formData.wholesale_pricing_tiers.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  {formData.wholesale_pricing_tiers.map((tier, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-background border rounded-lg">
+                      <span>Acima de <strong>{tier.quantity}</strong> peças: R$ {tier.price.toFixed(2)} / un</span>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive h-8 w-8 p-0"
+                        onClick={() => setFormData(prev => ({
+                          ...prev,
+                          wholesale_pricing_tiers: prev.wholesale_pricing_tiers.filter((_, i) => i !== idx)
+                        }))}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="grid md:grid-cols-2 gap-8">
               <div className="p-6 bg-muted/20 rounded-2xl border-2 border-dashed space-y-4">
                 <div className="flex items-center justify-between">
@@ -824,9 +886,10 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
                         onClick={() => {
                           if (variationName && variationValues) {
                             const values = variationValues.split(',').map(v => v.trim()).filter(Boolean)
+                            const options = values.map(v => ({ value: v }))
                             setFormData(prev => ({ 
                               ...prev, 
-                              variations: [...prev.variations, { name: variationName, values }] 
+                              variations: [...prev.variations, { name: variationName, options }] 
                             }))
                             setVariationName('')
                             setVariationValues('')
@@ -841,23 +904,71 @@ export function ProductForm({ productId, initialSupplierId, onClose, onSuccess }
 
                 <div className="space-y-4">
                   {formData.variations.map((v, idx) => (
-                    <div key={idx} className="p-4 bg-background border rounded-xl flex items-center justify-between">
-                      <div>
-                        <span className="font-bold text-primary mr-2">{v.name}:</span>
-                        <span className="text-muted-foreground">{v.values.join(', ')}</span>
+                    <div key={idx} className="p-4 bg-background border rounded-xl space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-primary">{v.name}</span>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive"
+                          onClick={() => setFormData(prev => ({ 
+                            ...prev, 
+                            variations: prev.variations.filter((_, i) => i !== idx) 
+                          }))}
+                        >
+                          <Trash2 className="w-4 h-4" /> Remover Variação
+                        </Button>
                       </div>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-destructive"
-                        onClick={() => setFormData(prev => ({ 
-                          ...prev, 
-                          variations: prev.variations.filter((_, i) => i !== idx) 
-                        }))}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {v.options.map((opt, optIdx) => (
+                          <div key={optIdx} className="flex flex-col gap-2 p-3 border rounded-lg bg-muted/20">
+                            <span className="font-medium text-center">{opt.value}</span>
+                            <div className="relative aspect-square w-full rounded-md border bg-muted overflow-hidden flex items-center justify-center">
+                              {opt.image ? (
+                                <>
+                                  <img src={opt.image} alt={opt.value} className="w-full h-full object-cover" />
+                                  <Button 
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 w-6 h-6"
+                                    onClick={() => {
+                                      const newVariations = [...formData.variations]
+                                      newVariations[idx].options[optIdx].image = undefined
+                                      setFormData(prev => ({ ...prev, variations: newVariations }))
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full text-xs text-muted-foreground hover:bg-muted/50 transition-colors">
+                                  <Upload className="w-4 h-4 mb-1" /> Foto
+                                  <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      const uploadData = new FormData();
+                                      uploadData.append('file', file);
+                                      const res = await fetch('/api/upload', { method: 'POST', body: uploadData });
+                                      const data = await res.json();
+                                      if (data.url) {
+                                        const newVariations = [...formData.variations];
+                                        newVariations[idx].options[optIdx].image = data.url;
+                                        setFormData(prev => ({ ...prev, variations: newVariations }));
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>

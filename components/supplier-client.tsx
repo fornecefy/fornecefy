@@ -92,7 +92,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
               minQuantity: p.min_quantity || 1,
               category: p.category || p.categoria || 'Geral',
               supplierName: mappedProfile.name,
-              supplierVerified: mappedProfile.verified
+              supplierVerified: mappedProfile.verified_badge
             }))
             setSupplierProducts(mappedProds)
             setFilteredProducts(mappedProds)
@@ -236,7 +236,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 mb-1.5">
                     <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
                       {supplier.name}
-                      {supplier.verified && (
+                      {supplier.verified_badge && (
                         <BadgeCheck className="w-5 h-5 text-blue-500 shrink-0" />
                       )}
                     </h1>
@@ -367,7 +367,7 @@ export default function SupplierClient({ supplierId }: { supplierId: string }) {
                   minQuantity: product.min_quantity || 1,
                   category: product.categoria || 'Geral',
                   supplierName: supplier.name,
-                  supplierVerified: supplier.verified
+                  supplierVerified: supplier.verified_badge
                 }} showActions={true} />
               ))}
             </div>

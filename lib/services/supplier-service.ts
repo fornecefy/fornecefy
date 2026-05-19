@@ -31,7 +31,7 @@ export async function getSuppliers(): Promise<Supplier[]> {
       whatsapp: item.whatsapp || '',
       modalities: item.modalities || ['Atacado'],
       plan: item.plan || 'Básico',
-      verified: item.verified || false,
+      verified: item.verified_badge || false,
       rating: item.rating || 0,
       products: [], // Inicialmente vazio
     }))

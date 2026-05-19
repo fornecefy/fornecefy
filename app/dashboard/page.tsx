@@ -24,7 +24,8 @@ import {
   Copy,
   MoreHorizontal,
   CheckCircle2,
-  LogOut
+  LogOut,
+  Loader2
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -37,6 +38,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { StorefrontEditor } from '@/components/storefront-editor'
 import { ProductForm } from '@/components/product-form'
 import { dashboardMetrics, leads, formatCurrency } from '@/lib/data'
@@ -45,7 +50,7 @@ import { supabase } from '@/lib/supabase'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const navItems = [
+const baseNavItems = [
   { id: 'produtos', label: 'Meus Produtos', icon: Package },
   { id: 'leads', label: 'Meus Leads', icon: Users },
   { id: 'vitrine', label: 'Editar Vitrine', icon: User },
@@ -56,6 +61,8 @@ const navItems = [
 
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState('produtos')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSavingPayment, setIsSavingPayment] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [editingProductId, setEditingProductId] = useState<string | null | 'new'>(null)
   const { user, isLoading: isAuthLoading, logout } = useAuth()
@@ -64,6 +71,13 @@ export default function DashboardPage() {
   const [currentSupplier, setCurrentSupplier] = useState<any>(null)
   const [supplierProducts, setSupplierProducts] = useState<any[]>([])
   const [isDataLoading, setIsDataLoading] = useState(true)
+
+  const navItems = [
+    ...baseNavItems,
+    ...(currentSupplier?.social_links?.features?.online_payment 
+      ? [{ id: 'pagamento', label: 'Pagamento Online', icon: CreditCard }] 
+      : [])
+  ]
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -158,7 +172,7 @@ export default function DashboardPage() {
 
       // Se for o super admin, libera todos os privilégios (vitrine liberada)
       if (user?.email === 'fornecefy@gmail.com') {
-        extraFields.verified = true
+        extraFields.verified_badge = true
         extraFields.plan = 'Elite'
         extraFields.status = 'approved'
       }
@@ -705,7 +719,7 @@ export default function DashboardPage() {
                       <div className="w-2 h-2 bg-primary rounded-full shrink-0" />
                       <span className="text-foreground">Selo de Verificado:</span>
                       <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                        {supplier.verified ? 'Ativo' : 'Pendente'}
+                        {supplier.verified_badge ? 'Ativo' : 'Pendente'}
                       </Badge>
                     </li>
                   </ul>
@@ -745,6 +759,149 @@ export default function DashboardPage() {
                   <Button className="w-full mt-auto bg-primary hover:bg-primary/90 text-primary-foreground py-6 font-bold rounded-xl shadow-lg shadow-primary/20">
                     Fazer Upgrade Agora
                   </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeSection === 'pagamento' && currentSupplier?.social_links?.features?.online_payment && (
+            <div className="space-y-6">
+              <Card className="bg-card border-border shadow-sm overflow-hidden">
+                <CardHeader className="bg-muted/30 border-b pb-4">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-primary" />
+                    Configuração de Pagamento Online
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie como você recebe pagamentos dos seus clientes através da plataforma.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-8">
+                  <div className="space-y-4">
+                    <Label className="text-base font-bold">Método de Pagamento</Label>
+                    <Select 
+                      value={currentSupplier?.social_links?.payment_config?.type || 'manual'} 
+                      onValueChange={(v) => {
+                        const newConfig = { ...(currentSupplier.social_links?.payment_config || {}), type: v }
+                        const newSocialLinks = { ...currentSupplier.social_links, payment_config: newConfig }
+                        setCurrentSupplier((prev: any) => ({ ...prev, social_links: newSocialLinks }))
+                      }}
+                    >
+                      <SelectTrigger className="w-[300px] h-12">
+                        <SelectValue placeholder="Selecione o método" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manual">PIX Manual (Chave PIX)</SelectItem>
+                        <SelectItem value="mercado_pago">Checkout Transparente (Mercado Pago)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {currentSupplier?.social_links?.payment_config?.type === 'manual' ? (
+                    <div className="space-y-4 p-6 bg-muted/20 border rounded-xl">
+                      <h3 className="font-bold">Dados para Transferência (PIX)</h3>
+                      <p className="text-sm text-muted-foreground">O cliente copiará esses dados e enviará o comprovante no seu WhatsApp.</p>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Chave PIX</Label>
+                          <Input 
+                            value={currentSupplier.social_links?.payment_config?.manual?.chave_pix || ''}
+                            onChange={(e) => {
+                              const newConfig = { ...currentSupplier.social_links?.payment_config, manual: { ...currentSupplier.social_links?.payment_config?.manual, chave_pix: e.target.value } }
+                              setCurrentSupplier((prev: any) => ({ ...prev, social_links: { ...prev.social_links, payment_config: newConfig } }))
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Banco</Label>
+                          <Input 
+                            value={currentSupplier.social_links?.payment_config?.manual?.banco || ''}
+                            onChange={(e) => {
+                              const newConfig = { ...currentSupplier.social_links?.payment_config, manual: { ...currentSupplier.social_links?.payment_config?.manual, banco: e.target.value } }
+                              setCurrentSupplier((prev: any) => ({ ...prev, social_links: { ...prev.social_links, payment_config: newConfig } }))
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Nome do Beneficiário</Label>
+                          <Input 
+                            value={currentSupplier.social_links?.payment_config?.manual?.beneficiario || ''}
+                            onChange={(e) => {
+                              const newConfig = { ...currentSupplier.social_links?.payment_config, manual: { ...currentSupplier.social_links?.payment_config?.manual, beneficiario: e.target.value } }
+                              setCurrentSupplier((prev: any) => ({ ...prev, social_links: { ...prev.social_links, payment_config: newConfig } }))
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 p-6 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+                      <h3 className="font-bold text-blue-700 flex items-center gap-2">
+                        Credenciais do Mercado Pago
+                      </h3>
+                      <p className="text-sm text-muted-foreground">Insira as chaves de produção da sua conta do Mercado Pago para receber pagamentos via PIX ou Cartão diretamente no checkout da plataforma.</p>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Public Key</Label>
+                          <Input 
+                            value={currentSupplier.social_links?.payment_config?.mercado_pago?.public_key || ''}
+                            onChange={(e) => {
+                              const newConfig = { ...currentSupplier.social_links?.payment_config, mercado_pago: { ...currentSupplier.social_links?.payment_config?.mercado_pago, public_key: e.target.value } }
+                              setCurrentSupplier((prev: any) => ({ ...prev, social_links: { ...prev.social_links, payment_config: newConfig } }))
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Access Token</Label>
+                          <Input 
+                            type="password"
+                            value={currentSupplier.social_links?.payment_config?.mercado_pago?.access_token || ''}
+                            onChange={(e) => {
+                              const newConfig = { ...currentSupplier.social_links?.payment_config, mercado_pago: { ...currentSupplier.social_links?.payment_config?.mercado_pago, access_token: e.target.value } }
+                              setCurrentSupplier((prev: any) => ({ ...prev, social_links: { ...prev.social_links, payment_config: newConfig } }))
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-6 border-t">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-lg">Ocultar Botão WhatsApp no Produto</h4>
+                        <p className="text-sm text-muted-foreground">Oculte o botão do WhatsApp na página do produto se desejar forçar a compra apenas online.</p>
+                      </div>
+                      <Switch 
+                        checked={currentSupplier?.social_links?.hide_whatsapp || false}
+                        onCheckedChange={(v) => {
+                          const newSocialLinks = { ...currentSupplier.social_links, hide_whatsapp: v }
+                          setCurrentSupplier((prev: any) => ({ ...prev, social_links: newSocialLinks }))
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-6 mt-6 border-t flex justify-end">
+                    <Button 
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                      disabled={isSavingPayment}
+                      onClick={async () => {
+                        setIsSavingPayment(true)
+                        try {
+                          await supabase.from('suppliers').update({ social_links: currentSupplier.social_links }).eq('id', currentSupplier.id)
+                          alert('Configurações de pagamento salvas com sucesso!')
+                        } catch (err) {
+                          alert('Erro ao salvar as configurações.')
+                        } finally {
+                          setIsSavingPayment(false)
+                        }
+                      }}
+                    >
+                      {isSavingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      Salvar Configurações
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>

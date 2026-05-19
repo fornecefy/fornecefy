@@ -15,6 +15,7 @@ export interface User {
   phone?: string
   cnpj?: string
   state?: string
+  modality?: string
 }
 
 interface AuthContextType {
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone: profile.phone,
             cnpj: profile.cnpj,
             state: profile.state,
+            modality: profile.category,
           })
         } else if (mounted) {
           // Fallback to suppliers table
@@ -130,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone: profile.phone,
             cnpj: profile.cnpj,
             state: profile.state,
+            modality: profile.category,
           }
           setUser(userData)
           return { success: true, userType: profile.type }
@@ -161,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone: '',
             cnpj: '',
             state: '',
+            modality: '',
           })
           return { success: true, userType: 'comprador' }
         }
@@ -202,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone: userData.phone,
             cnpj: userData.cnpj,
             state: userData.state,
-            category: 'Geral', // Default category
+            category: userData.modality || 'Geral',
           }
         ])
 

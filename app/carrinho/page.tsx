@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronRight,
-  Info
+  Info,
+  CreditCard
 } from 'lucide-react'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
@@ -28,7 +29,16 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useCart } from '@/lib/cart-context'
+import { useAuth } from '@/lib/auth-context'
 import { formatCurrency } from '@/lib/data'
 import { supabase } from '@/lib/supabase'
 
@@ -42,6 +52,7 @@ export default function CartPage() {
     getSupplierTotal, 
     generateWhatsAppMessage 
   } = useCart()
+  const { user } = useAuth()
   
   const [suppliersData, setSuppliersData] = useState<Record<string, any>>({})
   const [addressData, setAddressData] = useState({
@@ -53,6 +64,8 @@ export default function CartPage() {
     city: '',
     state: ''
   })
+  const [selectedSupplierForModal, setSelectedSupplierForModal] = useState<string | null>(null)
+  const [addressOption, setAddressOption] = useState<'informar' | 'combinar'>('combinar')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -154,28 +167,11 @@ export default function CartPage() {
     const fullAddress = formatAddress()
 
     try {
-      // Salva o pedido no banco de dados
-      const { error } = await supabase.from('orders').insert([{
-        buyer_id: user.id,
-        supplier_id: supplier.user_id || supplier.id,
-        items: supplierItems.map(item => ({
-          id: item.product.id,
-          name: item.product.name,
-          quantity: item.quantity,
-          price: item.product.wholesale_price || item.product.wholesalePrice,
-          modality: item.selectedModality
-        })),
-        total_value: getSupplierTotal(supplierId),
-        shipping_address: fullAddress,
-        status: 'pending'
-      }])
+      // TODO: Salvar pedido quando tabela 'orders' for criada no banco
+      // A tabela 'orders' ainda não foi configurada neste projeto Supabase
 
-      if (error && error.code !== 'PGRST204') {
-        console.error('Erro ao salvar pedido no banco:', error)
-        // Continuamos mesmo se o banco falhar, para não barrar o WhatsApp do usuário
-      }
-
-      const message = generateWhatsAppMessage(supplier, supplierItems, "A combinar", fullAddress)
+      const finalAddress = addressOption === 'combinar' ? 'A combinar com o vendedor' : formatAddress()
+      const message = generateWhatsAppMessage(supplier, supplierItems, "A combinar", finalAddress)
       const phone = supplier.whatsapp || supplier.phone || ''
       window.open(`https://wa.me/${phone}?text=${message}`, '_blank')
     } catch (err) {
@@ -249,6 +245,8 @@ export default function CartPage() {
               const total = getSupplierTotal(supplierId)
               const minOrder = supplier.min_order_value || 0
               const isMinMet = total >= minOrder
+              const hasOnlinePayment = supplier.social_links?.features?.online_payment
+              const hideWhatsapp = supplier.social_links?.hide_whatsapp
 
               return (
                 <Card key={supplierId} className="border-none shadow-sm overflow-hidden rounded-2xl">
@@ -363,19 +361,23 @@ export default function CartPage() {
                         <Button 
                           variant="outline" 
                           className="rounded-xl h-12 gap-2 border-slate-200"
-                          onClick={() => router.push(`/fornecedor/${supplier.slug || supplier.user_id}`)}
+                          onClick={() => router.push(`/fornecedor/${supplier.slug || supplier.user_id || supplier.id}`)}
                         >
                           <Store className="w-4 h-4" />
                           Ver mais itens
                         </Button>
-                        <Button 
-                          className={`rounded-xl h-12 gap-2 shadow-lg px-8 bg-green-600 hover:bg-green-700 text-white border-none transition-all hover:scale-105 active:scale-95 ${!isMinMet ? 'opacity-50 grayscale cursor-not-allowed' : 'shadow-green-500/20'}`}
-                          onClick={() => handleSendWhatsApp(supplierId)}
-                          disabled={!isMinMet || isSaving}
-                        >
-                          <MessageCircle className="w-5 h-5 fill-white" />
-                          {isSaving ? 'Processando...' : 'Finalizar via WhatsApp'}
-                        </Button>
+                        
+                        {!hideWhatsapp && (
+                          <Button 
+                            className={`rounded-xl h-12 gap-2 shadow-lg px-8 bg-green-600 hover:bg-green-700 text-white border-none transition-all hover:scale-105 active:scale-95 ${!isMinMet ? 'opacity-50 grayscale cursor-not-allowed' : 'shadow-green-500/20'}`}
+                            onClick={() => router.push(`/checkout/${supplierId}`)}
+                            disabled={!isMinMet || isSaving}
+                          >
+                            <MessageCircle className="w-5 h-5 fill-white" />
+                            {isSaving ? 'Processando...' : 'Finalizar Pedido'}
+                          </Button>
+                        )}
+
                       </div>
                     </div>
                   </CardContent>
@@ -386,82 +388,7 @@ export default function CartPage() {
 
           {/* Sidebar - Address & Total Summary */}
           <div className="lg:w-[400px] space-y-6">
-            <Card className="border-none shadow-sm rounded-2xl overflow-hidden bg-white">
-              <div className="p-6 bg-primary text-primary-foreground">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  Dados de Entrega
-                </h3>
-                <p className="text-primary-foreground/70 text-xs mt-1">
-                  Opcional: Informe seu endereço para cálculo de frete
-                </p>
-              </div>
-              <CardContent className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="cep" className="text-xs font-bold text-muted-foreground uppercase">CEP</Label>
-                    <Input 
-                      id="cep" 
-                      placeholder="00000-000"
-                      value={addressData.cep}
-                      onChange={handleCepChange}
-                      className="rounded-xl bg-slate-50 border-slate-200"
-                    />
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="street" className="text-xs font-bold text-muted-foreground uppercase">Logradouro (Rua/Av)</Label>
-                    <Input 
-                      id="street" 
-                      value={addressData.street}
-                      onChange={(e) => setAddressData(prev => ({ ...prev, street: e.target.value }))}
-                      className="rounded-xl bg-slate-50 border-slate-200"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="number" className="text-xs font-bold text-muted-foreground uppercase">Número</Label>
-                    <Input 
-                      id="number" 
-                      value={addressData.number}
-                      onChange={(e) => setAddressData(prev => ({ ...prev, number: e.target.value }))}
-                      className="rounded-xl bg-slate-50 border-slate-200"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="complement" className="text-xs font-bold text-muted-foreground uppercase">Complemento</Label>
-                    <Input 
-                      id="complement" 
-                      value={addressData.complement}
-                      onChange={(e) => setAddressData(prev => ({ ...prev, complement: e.target.value }))}
-                      className="rounded-xl bg-slate-50 border-slate-200"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="neighborhood" className="text-xs font-bold text-muted-foreground uppercase">Bairro</Label>
-                    <Input 
-                      id="neighborhood" 
-                      value={addressData.neighborhood}
-                      onChange={(e) => setAddressData(prev => ({ ...prev, neighborhood: e.target.value }))}
-                      className="rounded-xl bg-slate-50 border-slate-200"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city" className="text-xs font-bold text-muted-foreground uppercase">Cidade/UF</Label>
-                    <Input 
-                      id="city" 
-                      value={`${addressData.city}${addressData.state ? ' / ' + addressData.state : ''}`}
-                      readOnly
-                      className="rounded-xl bg-slate-100 border-slate-200 cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3 mt-4">
-                  <Info className="w-5 h-5 text-blue-600 shrink-0" />
-                  <p className="text-xs text-blue-800 leading-relaxed">
-                    O orçamento e as condições de frete serão combinados diretamente com cada fornecedor via WhatsApp.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+
 
             <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-white ring-1 ring-slate-100">
               <CardContent className="p-6 space-y-6">

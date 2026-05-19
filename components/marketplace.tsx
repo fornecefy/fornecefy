@@ -45,7 +45,7 @@ export function Marketplace() {
         const [suppliersData, productsResponse, allSuppliersInfo] = await Promise.all([
           getSuppliers().catch(e => { console.error(e); return []; }),
           supabase.from('products').select('*'),
-          supabase.from('suppliers').select('id, name, verified, user_id')
+          supabase.from('suppliers').select('id, name, verified_badge, user_id')
         ])
 
         if (!mounted) return;
@@ -72,7 +72,7 @@ export function Marketplace() {
               supplierId: p.supplier_id,
               supplierName: sup?.name || p.supplier_name || 'Fornecedor',
               readyToShip: p.ready_to_ship || false,
-              supplierVerified: sup?.verified || p.supplier_verified || false,
+              supplierVerified: sup?.verified_badge || false,
               modalities: p.modalities || ['Atacado'],
             }
           })

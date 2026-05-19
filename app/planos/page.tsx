@@ -7,8 +7,27 @@ import { Badge } from '@/components/ui/badge'
 import { PLAN_DETAILS, formatCurrency } from '@/lib/data'
 import { Check, Zap, Star, ShieldCheck, Rocket } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
 
 export default function PlansPage() {
+  const { user, isLoading } = useAuth()
+  const router = useRouter()
+
+  const handlePlanClick = (planId: string, price: number) => {
+    if (isLoading) return
+    
+    if (user) {
+      if (price === 0) {
+        router.push('/dashboard')
+      } else {
+        // Redireciona para o pagamento (pode ser /pagamento ou /dashboard com parâmetro)
+        router.push(`/pagamento?plano=${planId}`)
+      }
+    } else {
+      router.push('/cadastro?tipo=fornecedor')
+    }
+  }
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -81,18 +100,17 @@ export default function PlansPage() {
                   ))}
                 </div>
 
-                <Link href="/cadastro" className="w-full">
-                  <Button 
-                    variant={plan.highlight ? 'default' : 'outline'} 
-                    className={`w-full rounded-xl py-6 font-bold text-base transition-all ${
-                      plan.highlight 
-                        ? 'shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]' 
-                        : 'hover:bg-muted'
-                    }`}
-                  >
-                    {plan.buttonText}
-                  </Button>
-                </Link>
+                <Button 
+                  variant={plan.highlight ? 'default' : 'outline'} 
+                  className={`w-full rounded-xl py-6 font-bold text-base transition-all ${
+                    plan.highlight 
+                      ? 'shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]' 
+                      : 'hover:bg-muted'
+                  }`}
+                  onClick={() => handlePlanClick(plan.id, plan.price)}
+                >
+                  {plan.buttonText}
+                </Button>
               </div>
             ))}
           </div>
